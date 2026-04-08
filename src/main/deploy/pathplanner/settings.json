@@ -1,0 +1,42 @@
+{
+  "robotWidth": 0.84,
+  "robotLength": 0.87,
+  "holonomicMode": true,
+  "pathFolders": [
+    "Config Paths",
+    "Double Swing Left",
+    "Double Swing Right",
+    "Mid",
+    "Mid Depot",
+    "UD Swing Left",
+    "UD Swing Right"
+  ],
+  "autoFolders": [],
+  "defaultMaxVel": 5.12,
+  "defaultMaxAccel": 6.5,
+  "defaultMaxAngVel": 540.0,
+  "defaultMaxAngAccel": 1080.0,
+  "defaultNominalVoltage": 12.0,
+  "robotMass": 62.0,
+  "robotMOI": 6.883,
+  "robotTrackwidth": 0.546,
+  "driveWheelRadius": 0.051,
+  "driveGearing": 6.027,
+  "maxDriveSpeed": 5.12,
+  "driveMotorType": "krakenX60FOC",
+  "driveCurrentLimit": 60.0,
+  "wheelCOF": 1.2,
+  "flModuleX": 0.283,
+  "flModuleY": 0.258,
+  "frModuleX": 0.283,
+  "frModuleY": -0.258,
+  "blModuleX": -0.283,
+  "blModuleY": 0.258,
+  "brModuleX": -0.283,
+  "brModuleY": -0.258,
+  "bumperOffsetX": 0.0,
+  "bumperOffsetY": 0.0,
+  "robotFeatures": [
+    "{\"name\":\"Rectangle\",\"type\":\"rounded_rect\",\"data\":{\"center\":{\"x\":-0.558,\"y\":0.0},\"size\":{\"width\":0.635,\"length\":0.24},\"borderRadius\":0.05,\"strokeWidth\":0.02,\"filled\":false}}"
+  ]
+}

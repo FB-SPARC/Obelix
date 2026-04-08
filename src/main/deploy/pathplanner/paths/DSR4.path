@@ -1,0 +1,99 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 5.866,
+        "y": 3.351000000000001
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 5.8705572193287034,
+        "y": 2.4720100549768524
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.972581597222222,
+        "y": 0.8519547887731491
+      },
+      "prevControl": {
+        "x": 6.547302935371873,
+        "y": 1.1049751252574493
+      },
+      "nextControl": {
+        "x": 5.590826335437968,
+        "y": 0.6838875214218323
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 4.3064105588057915,
+        "y": 0.656561979315744
+      },
+      "prevControl": {
+        "x": 4.667891431155953,
+        "y": 0.6483204240731277
+      },
+      "nextControl": {
+        "x": 3.8517295692224574,
+        "y": 0.6669284434361148
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.984481119791667,
+        "y": 0.9817482638888897
+      },
+      "prevControl": {
+        "x": 3.355836733217593,
+        "y": 0.6316504629629629
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "dsr2end"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.7153680098684211,
+      "rotationDegrees": -90.0
+    },
+    {
+      "waypointRelativePos": 1.197471217105263,
+      "rotationDegrees": -180.0
+    },
+    {
+      "waypointRelativePos": 2.5365542763157896,
+      "rotationDegrees": -180.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 5.12,
+    "maxAcceleration": 6.5,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 1080.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 61.84147308332192
+  },
+  "reversed": false,
+  "folder": "Double Swing Right",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -90.0
+  },
+  "useDefaultConstraints": true
+}

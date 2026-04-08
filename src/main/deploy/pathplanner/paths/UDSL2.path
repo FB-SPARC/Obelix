@@ -1,0 +1,79 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 8.273,
+        "y": 4.775
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 8.21915183738426,
+        "y": 6.05422974537037
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.868543044429955,
+        "y": 7.389732034742922
+      },
+      "prevControl": {
+        "x": 6.973751863082154,
+        "y": 7.338916049970808
+      },
+      "nextControl": {
+        "x": 4.46867672498551,
+        "y": 7.454095967034589
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.8713029513888895,
+        "y": 7.027430772569444
+      },
+      "prevControl": {
+        "x": 3.935856231371088,
+        "y": 7.5961852063152016
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "udsl2end"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.12,
+      "rotationDegrees": -179.38133243362006
+    },
+    {
+      "waypointRelativePos": 1.6737870065789475,
+      "rotationDegrees": 180.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 5.12,
+    "maxAcceleration": 6.5,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 1080.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -59.31418006486748
+  },
+  "reversed": false,
+  "folder": "UD Swing Left",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 75.0
+  },
+  "useDefaultConstraints": true
+}

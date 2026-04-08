@@ -1,0 +1,115 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 2.8713029513888895,
+        "y": 7.027430772569444
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 3.2144197527255436,
+        "y": 7.0005481889505
+      },
+      "isLocked": false,
+      "linkedName": "dsl2end"
+    },
+    {
+      "anchor": {
+        "x": 4.32162377025463,
+        "y": 7.5531679687499995
+      },
+      "prevControl": {
+        "x": 3.3839836516203707,
+        "y": 7.4525870225694435
+      },
+      "nextControl": {
+        "x": 4.639912762425139,
+        "y": 7.58731092760504
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.213765914351852,
+        "y": 7.075
+      },
+      "prevControl": {
+        "x": 5.832785710948928,
+        "y": 7.6756534789565505
+      },
+      "nextControl": {
+        "x": 6.4133470915611035,
+        "y": 6.760340268722057
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.021395833333333,
+        "y": 6.2197651186342595
+      },
+      "prevControl": {
+        "x": 6.130022796883933,
+        "y": 6.444932129516797
+      },
+      "nextControl": {
+        "x": 5.866747799459762,
+        "y": 5.899203497578242
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.866,
+        "y": 4.718
+      },
+      "prevControl": {
+        "x": 5.854128283345752,
+        "y": 5.368022191691506
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "DSL4START"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.1,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 1.712911184210526,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 2.56,
+      "rotationDegrees": 90.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 5.12,
+    "maxAcceleration": 6.5,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 1080.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 90.0
+  },
+  "reversed": false,
+  "folder": "Double Swing Left",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -61.16561168531119
+  },
+  "useDefaultConstraints": true
+}
