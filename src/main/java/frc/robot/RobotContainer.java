@@ -10,10 +10,8 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandPS5Controller;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -68,6 +66,7 @@ public class RobotContainer {
   private final Shooter shooter;
   private final Superstructure superstructure;
 
+  // Vision is intentionally held alive here; it self-registers pose callbacks via its periodic().
   @SuppressWarnings("unused")
   private final Vision vision;
 
@@ -189,36 +188,44 @@ public class RobotContainer {
 
     // ── Superstructure state bindings ──────────────────────────────────────
     // Triangle: reset rack encoder for calibration
-    controller.triangle().onTrue(new InstantCommand(() -> rack.resetEncoder()));
+    controller.triangle().onTrue(Commands.runOnce(() -> rack.resetEncoder(), rack));
 
     // R1: Intake control (press → INTAKING, release → ACTIVE if was intaking)
-    controller.R1().onTrue(new InstantCommand(() -> superstructure.setState(State.INTAKING)));
+    controller
+        .R1()
+        .onTrue(Commands.runOnce(() -> superstructure.setState(State.INTAKING), superstructure));
     controller
         .R1()
         .onFalse(
-            new InstantCommand(
+            Commands.runOnce(
                 () -> {
                   if (superstructure.getState() == State.INTAKING)
                     superstructure.setState(State.ACTIVE);
-                }));
+                },
+                superstructure));
 
     controller
         .options()
-        .onTrue(new InstantCommand(() -> superstructure.setState(State.INTAKE_CLOSED)));
+        .onTrue(
+            Commands.runOnce(
+                () -> superstructure.setState(State.INTAKE_CLOSED), superstructure));
 
     // ── Shooting mode ─────────────────────────────────────────────────────
     final double DEADBAND = 0.1;
 
     // L1: Shooting control (press → SHOOTING, release → ACTIVE if was shooting)
     // L1 is the primary shot authority — holding it enables both state and drive auto-aim
-    controller.L1().onTrue(new InstantCommand(() -> superstructure.setState(State.SHOOTING)));
+    controller
+        .L1()
+        .onTrue(Commands.runOnce(() -> superstructure.setState(State.SHOOTING), superstructure));
     controller
         .L1()
         .onFalse(
-            new InstantCommand(
+            Commands.runOnce(
                 () -> {
                   if (superstructure.isShooting()) superstructure.setState(State.ACTIVE);
-                }));
+                },
+                superstructure));
 
     // Drive auto-aim while L1 held: PID angular control to target.
     // Left stick Y/X supply translational velocity (squared input for precision).
@@ -244,11 +251,13 @@ public class RobotContainer {
                 MathUtil.applyDeadband(Math.abs(controller.getRightX()), DEADBAND) > 0.0
                     || MathUtil.applyDeadband(Math.abs(controller.getRightY()), DEADBAND) > 0.0)
         .and(new Trigger(superstructure::isShooting))
-        .onTrue(new InstantCommand(() -> superstructure.setState(State.ACTIVE)));
+        .onTrue(Commands.runOnce(() -> superstructure.setState(State.ACTIVE), superstructure));
 
     // Touchpad: Emergency stop (true panic button)
     // Shuts down all motors immediately regardless of state
-    controller.touchpad().onTrue(new InstantCommand(() -> superstructure.setState(State.IDLE)));
+    controller
+        .touchpad()
+        .onTrue(Commands.runOnce(() -> superstructure.setState(State.IDLE), superstructure));
   }
 
   public void teleopInit() {

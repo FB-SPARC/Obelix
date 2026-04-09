@@ -10,7 +10,7 @@ public final class ShooterConstants {
   public static final int FOLLOWER_MOTOR_2_ID = 52; // Right up
   public static final int FOLLOWER_MOTOR_3_ID = 53; // Right down
 
-  public static final Distance kDrumRadius = Meters.of(0.0); // TODO: Set drum radius in meters
+  public static final Distance kDrumRadius = Meters.of(0.0508);
 
   public static final double MAX_CURRENT = 100.0; // Amps
 

@@ -97,9 +97,9 @@ public class FeederIOTalonFX implements FeederIO {
     followerAppliedVolts = followerMotor.getMotorVoltage();
     followerCurrent = followerMotor.getStatorCurrent();
 
-    // Set update frequency
+    // Set update frequencies — on CANivore (CAN FD), use higher rates
     BaseStatusSignal.setUpdateFrequencyForAll(
-        50,
+        200,
         leaderVelocity,
         leaderAppliedVolts,
         leaderCurrent,

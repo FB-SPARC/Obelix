@@ -74,7 +74,7 @@ public class VisionIOLimelight implements VisionIO {
     // Set LL4 IMU mode:
     // Mode 1 (EXTERNAL_SEED) while disabled - seeds internal IMU from external gyro
     // Mode 4 (INTERNAL_EXTERNAL_ASSIST) while enabled - fuses internal 1kHz IMU with external gyro
-    imuModePublisher.accept(DriverStation.isDisabled() ? 1 : 1);
+    imuModePublisher.accept(DriverStation.isDisabled() ? 1 : 4);
 
     NetworkTableInstance.getDefault()
         .flush(); // Increases network traffic but recommended by Limelight

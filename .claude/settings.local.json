@@ -3,7 +3,8 @@
     "allow": [
       "Bash(./gradlew build:*)",
       "Bash(./gradlew compileJava)",
-      "Bash(./gradlew tasks:*)"
+      "Bash(./gradlew tasks:*)",
+      "Bash(npx skills:*)"
     ]
   }
 }

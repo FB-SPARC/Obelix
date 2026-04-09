@@ -56,9 +56,9 @@ public class IntakeIOTalonFX implements IntakeIO {
     leaderAppliedVolts = leaderMotor.getMotorVoltage();
     leaderCurrent = leaderMotor.getStatorCurrent();
 
-    // Set update frequency
+    // Set update frequencies — on CANivore (CAN FD), use higher rates
     BaseStatusSignal.setUpdateFrequencyForAll(
-        50, leaderVelocity, leaderAppliedVolts, leaderCurrent);
+        200, leaderVelocity, leaderAppliedVolts, leaderCurrent);
 
     // Optimize CAN bus utilization
     ParentDevice.optimizeBusUtilizationForAll(leaderMotor);

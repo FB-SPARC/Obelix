@@ -96,8 +96,8 @@ public class RackIOTalonFX implements RackIO {
     appliedVolts = motor.getMotorVoltage();
     current = motor.getStatorCurrent();
 
-    // Set update frequency
-    BaseStatusSignal.setUpdateFrequencyForAll(50, position, velocity, appliedVolts, current);
+    // Set update frequencies — on CANivore (CAN FD), use higher rates; rack moves fast
+    BaseStatusSignal.setUpdateFrequencyForAll(200, position, velocity, appliedVolts, current);
 
     // Optimize CAN bus utilization
     ParentDevice.optimizeBusUtilizationForAll(motor);
@@ -157,8 +157,8 @@ public class RackIOTalonFX implements RackIO {
     motor.setControl(
         motionMagicRequest
             .withPosition(motorRotations)
-            .withVelocity(ka)
-            .withAcceleration(kv)
+            .withVelocity(kv)
+            .withAcceleration(ka)
             .withJerk(kj));
   }
 

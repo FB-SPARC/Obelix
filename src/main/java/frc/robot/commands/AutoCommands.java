@@ -13,20 +13,15 @@ import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.Superstructure.State;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
+import static frc.robot.Constants.DriveAlignConstants.*;
 
 /**
  * Named commands for PathPlanner auto routines.
  *
- * <p>All auto commands automatically manage superstructure state transitions to prevent the
- * robot from hanging mid-auto (unlike the old system where AutoAim never ended).
+ * <p>All auto commands automatically manage superstructure state transitions to prevent the robot
+ * from hanging mid-auto (unlike the old system where AutoAim never ended).
  */
 public class AutoCommands {
-
-  // PID gains for angular (rotation) control during auto aim
-  private static final double ANGLE_KP = 5.0;
-  private static final double ANGLE_KD = 0.0;
-  private static final double ANGLE_MAX_VELOCITY = 8.0;
-  private static final double ANGLE_MAX_ACCELERATION = 20.0;
 
   /** Default time to spin up, aim, and feed during auto shooting (seconds). */
   private static final double SHOOT_TIMEOUT_SECONDS = 2.0;
@@ -49,10 +44,11 @@ public class AutoCommands {
 
   /**
    * Complete auto shooting sequence: sets SHOOTING state, aims at target with a timeout, then
-   * returns to ACTIVE. This ensures the command always terminates within {@code timeoutSeconds}
-   * (no hanging like the old AutoAim).
+   * returns to ACTIVE. This ensures the command always terminates within {@code timeoutSeconds} (no
+   * hanging like the old AutoAim).
    *
    * <p>Sequence:
+   *
    * <ol>
    *   <li>Set SHOOTING (spins up shooter and hood to match target distance)
    *   <li>AimAtPoint with timeout (PID-rotates chassis to face target)
@@ -74,8 +70,8 @@ public class AutoCommands {
   }
 
   /**
-   * Convenience overload using the default timeout ({@link #SHOOT_TIMEOUT_SECONDS}).
-   * Recommended for most autos.
+   * Convenience overload using the default timeout ({@link #SHOOT_TIMEOUT_SECONDS}). Recommended
+   * for most autos.
    */
   public static Command shootSequence(
       Superstructure superstructure, Drive drive, Supplier<Translation2d> targetSupplier) {
@@ -84,9 +80,9 @@ public class AutoCommands {
 
   /**
    * Pure drive command that aims the chassis at a field point without any superstructure state
-   * dependency. Uses a ProfiledPIDController for smooth angular rotation. The command will
-   * X-lock wheels when the robot is within tolerance of the target angle, making it energy
-   * efficient while holding position.
+   * dependency. Uses a ProfiledPIDController for smooth angular rotation. The command will X-lock
+   * wheels when the robot is within tolerance of the target angle, making it energy efficient while
+   * holding position.
    *
    * <p>This command never checks superstructure state, so it can be used in isolation or combined
    * with other commands via {@link edu.wpi.first.wpilibj2.command.Commands#sequence}.
@@ -103,7 +99,7 @@ public class AutoCommands {
             ANGLE_KD,
             new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI); // Handle wraparound at ±π
-    angleController.setTolerance(0.5); // Within 0.5 rad is "at target"
+    angleController.setTolerance(Math.toRadians(5)); // Within 5 degrees is "at target"
 
     return Commands.run(
             () -> {
@@ -118,13 +114,13 @@ public class AutoCommands {
                       drive.getRotation().getRadians(), targetAngle.getRadians());
 
               // Log telemetry for debugging/tuning
-              Logger.recordOutput("Auto Align/robotRot", drive.getRotation().getDegrees());
-              Logger.recordOutput("Auto Align/robotToTarget", robotToTarget);
-              Logger.recordOutput("Auto Align/targetAngle", robotToTarget.getAngle());
-              Logger.recordOutput("Auto Align/omega", omega);
-              Logger.recordOutput("Auto Align/Chassis speeds", new ChassisSpeeds(0.0, 0.0, omega));
-              Logger.recordOutput("Auto Align/Pos error", angleController.getPositionError());
-              Logger.recordOutput("Auto Align/Vel error", angleController.getVelocityError());
+              Logger.recordOutput("AutoAlign/RobotRotDeg", drive.getRotation().getDegrees());
+              Logger.recordOutput("AutoAlign/RobotToTarget", robotToTarget);
+              Logger.recordOutput("AutoAlign/TargetAngle", robotToTarget.getAngle());
+              Logger.recordOutput("AutoAlign/OmegaRadPerSec", omega);
+              Logger.recordOutput("AutoAlign/ChassisSpeedsSetpoint", new ChassisSpeeds(0.0, 0.0, omega));
+              Logger.recordOutput("AutoAlign/PosErrorRad", angleController.getPositionError());
+              Logger.recordOutput("AutoAlign/VelErrorRadPerSec", angleController.getVelocityError());
 
               // Spin-in-place rotation; if near target, X-lock wheels instead
               if (Math.abs(omega) > 0.05) {

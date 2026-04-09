@@ -123,9 +123,9 @@ public class ShooterIOTalonFX implements ShooterIO {
     follower3AppliedVolts = followerMotor3.getMotorVoltage();
     follower3Current = followerMotor3.getStatorCurrent();
 
-    // Set update frequencies
+    // Set update frequencies — on CANivore (CAN FD), use higher rates
     BaseStatusSignal.setUpdateFrequencyForAll(
-        50,
+        200,
         leaderVelocity,
         leaderAppliedVolts,
         leaderCurrent,

@@ -115,9 +115,8 @@ public class HoodIOTalonFX implements HoodIO {
     // Initialize encoder status signals
     encoderAbsolutePosition = encoder.getAbsolutePosition();
 
-    // Set update frequency
-    BaseStatusSignal.setUpdateFrequencyForAll(
-        50, motorPosition, motorVelocity, motorAppliedVolts, motorCurrent, encoderAbsolutePosition);
+    // Set update frequencies — on CANivore (CAN FD), use higher rates
+    BaseStatusSignal.setUpdateFrequencyForAll(200, motorPosition, motorVelocity, motorAppliedVolts, motorCurrent, encoderAbsolutePosition);
 
     // Optimize CAN bus utilization
     ParentDevice.optimizeBusUtilizationForAll(motor, encoder);

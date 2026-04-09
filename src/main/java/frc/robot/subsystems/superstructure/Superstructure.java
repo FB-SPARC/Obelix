@@ -41,6 +41,8 @@ public class Superstructure extends SubsystemBase {
   private final Shooter shooter;
   private final Drive drive;
 
+  private static final double SHOOTER_RPM_SCALE = 2.05;
+
   // ── State machine ──────────────────────────────────────────────────────────
   public enum State {
     /** Emergency stop — everything off, rack stops where it is. */
@@ -119,8 +121,8 @@ public class Superstructure extends SubsystemBase {
   }
 
   /**
-   * Default teleop state: rack is deployed and intake holds game pieces with low voltage (4V).
-   * All other systems are idle. This state allows the robot to pass through the trench while
+   * Default teleop state: rack is deployed and intake holds game pieces with low voltage (4V). All
+   * other systems are idle. This state allows the robot to pass through the trench while
    * maintaining control of any previously intaken game pieces. Transition from this state to
    * INTAKING (R1) or SHOOTING (L1).
    */
@@ -138,15 +140,15 @@ public class Superstructure extends SubsystemBase {
   }
 
   /**
-   * Aggressive intake mode: intake motor spins at full power (8V) and rack deploys quickly
-   * to pick up game pieces from the trench. Rack motion is aggressive (40x cruise velocity)
-   * to minimize stall time. Other systems idle.
+   * Aggressive intake mode: intake motor spins at full power (8V) and rack deploys quickly to pick
+   * up game pieces from the trench. Rack motion is aggressive (40x cruise velocity) to minimize
+   * stall time. Other systems idle.
    */
   private void handleIntaking() {
     intake.setVoltage(8); // Full power intake
     rack.setPosition(
         RackConstants.MAX_POSITION_METERS,
-        RackConstants.kCruiseVelocity * 40, // Aggressive deploy speed
+        RackConstants.kCruiseVelocity * 10, // Aggressive deploy speed
         RackConstants.kAcceleration * 10,
         RackConstants.kJerk * 40);
     bed.stop();
@@ -156,9 +158,9 @@ public class Superstructure extends SubsystemBase {
   }
 
   /**
-   * Shooting state: hood and shooter are controlled by a polynomial shot-solution based on
-   * distance to target. Rack remains deployed and intake holds pieces. Bed/feeder are gated
-   * by the shooter-ready latch to prevent jamming.
+   * Shooting state: hood and shooter are controlled by a polynomial shot-solution based on distance
+   * to target. Rack remains deployed and intake holds pieces. Bed/feeder are gated by the
+   * shooter-ready latch to prevent jamming.
    *
    * <p>The shooter-ready latch is key to avoiding stutter: once the shooter RPM reaches setpoint,
    * feeding begins and continues even if RPM momentarily dips (e.g., due to vibration). The latch
@@ -166,14 +168,16 @@ public class Superstructure extends SubsystemBase {
    */
   private void handleShooting() {
     // Compute shot solution (hood angle & flywheel RPM) from distance to target
+    // Intentionally use negative distance because the shot-solution polynomials are decreasing
+    // functions
     double distanceToTarget = -getDistanceToTarget();
-    double shooterRPMGoal = sc.getFlywheelRPM(distanceToTarget) * 2.05;
+    double shooterRPMGoal = sc.getFlywheelRPM(distanceToTarget) * SHOOTER_RPM_SCALE;
     double hoodAngleGoal = sc.getHoodAngle(distanceToTarget);
 
     // Log telemetry for dashboard/debugging
-    Logger.recordOutput("ShotControl/ShooterRPMGoal", shooterRPMGoal);
-    Logger.recordOutput("ShotControl/HoodAngleGoal", hoodAngleGoal);
-    Logger.recordOutput("ShotControl/DistanceToTarget", distanceToTarget);
+    Logger.recordOutput("Superstructure/ShotControl/ShooterRPMGoal", shooterRPMGoal);
+    Logger.recordOutput("Superstructure/ShotControl/HoodAngleGoal", hoodAngleGoal);
+    Logger.recordOutput("Superstructure/ShotControl/DistanceToTarget", distanceToTarget);
 
     // Set hood angle and shooter RPM from shot solution
     hood.setAngle(hoodAngleGoal);
@@ -208,7 +212,7 @@ public class Superstructure extends SubsystemBase {
     intake.stop();
     rack.setPosition(
         RackConstants.MIN_POSITION_METERS,
-        RackConstants.kCruiseVelocity * 30,
+        RackConstants.kCruiseVelocity * 10,
         RackConstants.kAcceleration * 30,
         RackConstants.kJerk * 30);
     shooter.stop();
@@ -249,7 +253,7 @@ public class Superstructure extends SubsystemBase {
     var robotPose = drive.getPose();
     var targetPose = getTarget();
 
-    Logger.recordOutput("ShotControl/TargetPose", new Pose2d(targetPose, new Rotation2d()));
+    Logger.recordOutput("Superstructure/ShotControl/TargetPose", new Pose2d(targetPose, new Rotation2d()));
 
     var shooterTranslation =
         robotPose
