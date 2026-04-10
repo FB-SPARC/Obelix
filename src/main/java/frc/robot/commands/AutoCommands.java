@@ -25,7 +25,7 @@ import org.littletonrobotics.junction.Logger;
 public class AutoCommands {
 
   /** Default time to spin up, aim, and feed during auto shooting (seconds). */
-  private static final double SHOOT_TIMEOUT_SECONDS = 2.0;
+  private static final double SHOOT_TIMEOUT_SECONDS = 4.0;
 
   private AutoCommands() {}
 
@@ -88,7 +88,7 @@ public class AutoCommands {
    * <p>This command never checks superstructure state, so it can be used in isolation or combined
    * with other commands via {@link edu.wpi.first.wpilibj2.command.Commands#sequence}.
    *
-   * <p>Tolerance: 0.5 radians (~28.6 degrees).
+   * <p>Tolerance: 0.5 degrees.
    */
   public static Command aimAtPoint(Drive drive, Supplier<Translation2d> targetSupplier) {
 

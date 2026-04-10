@@ -132,7 +132,7 @@ public class Superstructure extends SubsystemBase {
         RackConstants.kCruiseVelocity * 10,
         RackConstants.kAcceleration * 30,
         RackConstants.kJerk * 30);
-    intake.setVoltage(0); // Hold voltage — keeps game pieces in place without aggressive spin
+    intake.setVoltage(0);
     bed.stop();
     feeder.stop();
     hood.setAngle(0);
@@ -175,7 +175,7 @@ public class Superstructure extends SubsystemBase {
     double hoodAngleGoal = sc.getHoodAngle(distanceToTarget);
 
     // Log telemetry for dashboard/debugging
-    Logger.recordOutput("Superstructure/ShotControl/ShooterRPMGoal", shooterRPMGoal * SHOOTER_RPM_SCALE);
+    Logger.recordOutput("Superstructure/ShotControl/ShooterRPMGoal", shooterRPMGoal);
     Logger.recordOutput("Superstructure/ShotControl/HoodAngleGoal", hoodAngleGoal);
     Logger.recordOutput("Superstructure/ShotControl/DistanceToTarget", -distanceToTarget);
 

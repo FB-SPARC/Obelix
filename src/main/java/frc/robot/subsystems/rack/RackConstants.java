@@ -1,7 +1,7 @@
 package frc.robot.subsystems.rack;
 
 public final class RackConstants {
-  public static final int MOTOR_ID = 15; // TODO: Set CAN ID
+  public static final int MOTOR_ID = 15;
 
   public static final double kGearRatio = 169.0 / 48.0;
   public static final double kPinionRadiusMeters = 0.02032;
