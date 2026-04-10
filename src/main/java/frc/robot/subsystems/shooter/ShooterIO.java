@@ -24,6 +24,8 @@ public interface ShooterIO {
     public double followerMotor3Current = 0.0;
     public double followerMotor3Voltage = 0.0;
     public double followerMotor3VelocityRPM = 0.0;
+
+    public double shooterSetpointRPM = 0.0;
   }
 
   public default void updateInputs(ShooterIOInputs inputs) {}

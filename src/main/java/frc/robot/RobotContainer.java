@@ -10,6 +10,9 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandPS5Controller;
@@ -252,6 +255,11 @@ public class RobotContainer {
         .and(new Trigger(superstructure::isShooting))
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.ACTIVE), superstructure));
 
+
+    new Trigger(
+        DriverStation::isTeleopEnabled
+        )
+        .onTrue(Commands.runOnce(() -> superstructure.setState(State.ACTIVE), superstructure));
     // Touchpad: Emergency stop (true panic button)
     // Shuts down all motors immediately regardless of state
     controller
@@ -259,9 +267,9 @@ public class RobotContainer {
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.IDLE), superstructure));
   }
 
-  public void teleopInit() {
-    if (superstructure != null) superstructure.setState(State.ACTIVE);
-  }
+//   public void teleopInit() {
+//     if (superstructure != null) superstructure.setState(State.ACTIVE);
+//   }
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.

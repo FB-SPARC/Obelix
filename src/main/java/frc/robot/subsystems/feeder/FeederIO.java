@@ -14,6 +14,8 @@ public interface FeederIO {
     public double followerMotorCurrent = 0.0;
     public double followerMotorVoltage = 0.0;
     public double followerMotorVelocityRPM = 0.0;
+
+    public double feederSetpointRPM = 0.0;
   }
 
   public default void updateInputs(FeederIOInputs inputs) {}

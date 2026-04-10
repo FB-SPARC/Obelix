@@ -177,6 +177,8 @@ public class ShooterIOTalonFX implements ShooterIO {
     inputs.followerMotor3VelocityRPM = follower3Velocity.getValueAsDouble() * 60.0;
     inputs.followerMotor3Voltage = follower3AppliedVolts.getValueAsDouble();
     inputs.followerMotor3Current = follower3Current.getValueAsDouble();
+
+    inputs.shooterSetpointRPM = setpointRPM;
   }
 
   @Override

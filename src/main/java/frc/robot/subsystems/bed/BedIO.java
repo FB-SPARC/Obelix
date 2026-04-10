@@ -14,6 +14,8 @@ public interface BedIO {
     public double followerMotorCurrent = 0.0;
     public double followerMotorVoltage = 0.0;
     public double followerMotorVelocityRPM = 0.0;
+    
+    public double bedSetpointRPM = 0.0;
   }
 
   public default void updateInputs(BedIOInputs inputs) {}

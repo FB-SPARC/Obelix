@@ -175,21 +175,13 @@ public class Superstructure extends SubsystemBase {
     double hoodAngleGoal = sc.getHoodAngle(distanceToTarget);
 
     // Log telemetry for dashboard/debugging
-    Logger.recordOutput("Superstructure/ShotControl/ShooterRPMGoal", shooterRPMGoal);
+    Logger.recordOutput("Superstructure/ShotControl/ShooterRPMGoal", shooterRPMGoal * SHOOTER_RPM_SCALE);
     Logger.recordOutput("Superstructure/ShotControl/HoodAngleGoal", hoodAngleGoal);
-    Logger.recordOutput("Superstructure/ShotControl/DistanceToTarget", distanceToTarget);
+    Logger.recordOutput("Superstructure/ShotControl/DistanceToTarget", -distanceToTarget);
 
     // Set hood angle and shooter RPM from shot solution
     hood.setAngle(hoodAngleGoal);
     shooter.setShooterRPM(shooterRPMGoal);
-
-    // Keep rack deployed and intake holding during shot
-    rack.setPosition(
-        RackConstants.MIN_POSITION_METERS,
-        RackConstants.kCruiseVelocity,
-        RackConstants.kAcceleration,
-        RackConstants.kJerk);
-    intake.setVoltage(4); // Hold voltage
 
     // Shooter-ready latch: gate feeding on shooter reaching setpoint
     // This prevents bed/feeder from jamming if shooter RPM flickers during spin-up
@@ -199,6 +191,13 @@ public class Superstructure extends SubsystemBase {
     if (shooterWasReady) {
       bed.setBedRPM(2000);
       feeder.setFeederRPM(2500);
+      // Keep rack deployed and intake holding during shot
+      rack.setPosition(
+          RackConstants.MIN_POSITION_METERS,
+          RackConstants.kCruiseVelocity,
+          RackConstants.kAcceleration,
+          RackConstants.kJerk);
+      intake.setVoltage(4); // Hold voltage
     } else {
       bed.stop(); // Don't feed until shooter is ready
       feeder.stop();
@@ -250,13 +249,13 @@ public class Superstructure extends SubsystemBase {
 
   /** Returns the distance from the robot to the target in meters. */
   public double getDistanceToTarget() {
-    var robotPose = drive.getPose();
-    var targetPose = getTarget();
+    Pose2d robotPose = drive.getPose();
+    Translation2d targetPose = getTarget();
 
     Logger.recordOutput(
         "Superstructure/ShotControl/TargetPose", new Pose2d(targetPose, new Rotation2d()));
 
-    var shooterTranslation =
+    Translation2d shooterTranslation =
         robotPose
             .getTranslation()
             .plus(new Translation2d(0.165, 0.0).rotateBy(robotPose.getRotation()));
@@ -272,8 +271,8 @@ public class Superstructure extends SubsystemBase {
   public void periodic() {
     Logger.recordOutput("Superstructure/State", currentState.toString());
 
-    var robotPose = drive.getPose();
-    var shooterTranslation =
+    Pose2d robotPose = drive.getPose();
+    Translation2d shooterTranslation =
         robotPose
             .getTranslation()
             .plus(new Translation2d(0.165, 0.0).rotateBy(robotPose.getRotation()));

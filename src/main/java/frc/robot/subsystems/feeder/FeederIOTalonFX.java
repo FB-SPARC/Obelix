@@ -127,6 +127,8 @@ public class FeederIOTalonFX implements FeederIO {
     inputs.followerMotorVelocityRPM = followerVelocity.getValueAsDouble() * 60.0;
     inputs.followerMotorVoltage = followerAppliedVolts.getValueAsDouble();
     inputs.followerMotorCurrent = followerCurrent.getValueAsDouble();
+
+    inputs.feederSetpointRPM = setpointRPM;
   }
 
   @Override

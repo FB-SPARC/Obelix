@@ -118,6 +118,8 @@ public class BedIOTalonFX implements BedIO {
     inputs.followerMotorVelocityRPM = followerVelocity.getValueAsDouble() * 60.0;
     inputs.followerMotorVoltage = followerAppliedVolts.getValueAsDouble();
     inputs.followerMotorCurrent = followerCurrent.getValueAsDouble();
+
+    inputs.bedSetpointRPM = setpointRPM;
   }
 
   @Override

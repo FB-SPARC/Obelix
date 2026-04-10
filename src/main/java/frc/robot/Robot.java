@@ -133,7 +133,7 @@ public class Robot extends LoggedRobot {
       autonomousCommand.cancel();
     }
 
-    robotContainer.teleopInit();
+    // robotContainer.teleopInit();
   }
 
   /** This function is called periodically during operator control. */
