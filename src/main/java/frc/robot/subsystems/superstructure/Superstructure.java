@@ -41,7 +41,7 @@ public class Superstructure extends SubsystemBase {
   private final Shooter shooter;
   private final Drive drive;
 
-  private static final double SHOOTER_RPM_SCALE = 2.05;
+  private static final double SHOOTER_RPM_SCALE = 1.90;
 
   // ── State machine ──────────────────────────────────────────────────────────
   public enum State {
@@ -129,10 +129,10 @@ public class Superstructure extends SubsystemBase {
   private void handleActive() {
     rack.setPosition(
         RackConstants.MAX_POSITION_METERS,
-        RackConstants.kCruiseVelocity,
-        RackConstants.kAcceleration,
-        RackConstants.kJerk);
-    intake.setVoltage(4); // Hold voltage — keeps game pieces in place without aggressive spin
+        RackConstants.kCruiseVelocity * 10,
+        RackConstants.kAcceleration * 30,
+        RackConstants.kJerk * 30);
+    intake.setVoltage(0); // Hold voltage — keeps game pieces in place without aggressive spin
     bed.stop();
     feeder.stop();
     hood.setAngle(0);
@@ -145,12 +145,12 @@ public class Superstructure extends SubsystemBase {
    * stall time. Other systems idle.
    */
   private void handleIntaking() {
-    intake.setVoltage(8); // Full power intake
+    intake.setVoltage(9.5); // Full power intake
     rack.setPosition(
         RackConstants.MAX_POSITION_METERS,
         RackConstants.kCruiseVelocity * 10, // Aggressive deploy speed
-        RackConstants.kAcceleration * 10,
-        RackConstants.kJerk * 40);
+        RackConstants.kAcceleration * 30,
+        RackConstants.kJerk * 30);
     bed.stop();
     feeder.stop();
     hood.setAngle(0);
@@ -185,7 +185,7 @@ public class Superstructure extends SubsystemBase {
 
     // Keep rack deployed and intake holding during shot
     rack.setPosition(
-        RackConstants.MAX_POSITION_METERS,
+        RackConstants.MIN_POSITION_METERS,
         RackConstants.kCruiseVelocity,
         RackConstants.kAcceleration,
         RackConstants.kJerk);
@@ -253,7 +253,8 @@ public class Superstructure extends SubsystemBase {
     var robotPose = drive.getPose();
     var targetPose = getTarget();
 
-    Logger.recordOutput("Superstructure/ShotControl/TargetPose", new Pose2d(targetPose, new Rotation2d()));
+    Logger.recordOutput(
+        "Superstructure/ShotControl/TargetPose", new Pose2d(targetPose, new Rotation2d()));
 
     var shooterTranslation =
         robotPose
@@ -262,8 +263,8 @@ public class Superstructure extends SubsystemBase {
 
     return MathUtil.clamp(
         shooterTranslation.getDistance(new Translation2d(targetPose.getX(), targetPose.getY())),
-        1.4,
-        6.0);
+        1.2,
+        16.0);
   }
 
   // ── Periodic ───────────────────────────────────────────────────────────────

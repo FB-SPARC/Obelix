@@ -1,5 +1,7 @@
 package frc.robot.commands;
 
+import static frc.robot.Constants.DriveAlignConstants.*;
+
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -13,7 +15,6 @@ import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.Superstructure.State;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
-import static frc.robot.Constants.DriveAlignConstants.*;
 
 /**
  * Named commands for PathPlanner auto routines.
@@ -118,9 +119,11 @@ public class AutoCommands {
               Logger.recordOutput("AutoAlign/RobotToTarget", robotToTarget);
               Logger.recordOutput("AutoAlign/TargetAngle", robotToTarget.getAngle());
               Logger.recordOutput("AutoAlign/OmegaRadPerSec", omega);
-              Logger.recordOutput("AutoAlign/ChassisSpeedsSetpoint", new ChassisSpeeds(0.0, 0.0, omega));
+              Logger.recordOutput(
+                  "AutoAlign/ChassisSpeedsSetpoint", new ChassisSpeeds(0.0, 0.0, omega));
               Logger.recordOutput("AutoAlign/PosErrorRad", angleController.getPositionError());
-              Logger.recordOutput("AutoAlign/VelErrorRadPerSec", angleController.getVelocityError());
+              Logger.recordOutput(
+                  "AutoAlign/VelErrorRadPerSec", angleController.getVelocityError());
 
               // Spin-in-place rotation; if near target, X-lock wheels instead
               if (Math.abs(omega) > 0.05) {

@@ -7,6 +7,8 @@
 
 package frc.robot.commands;
 
+import static frc.robot.Constants.DriveAlignConstants.*;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
@@ -30,7 +32,6 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
-import static frc.robot.Constants.DriveAlignConstants.*;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;

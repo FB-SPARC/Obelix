@@ -207,8 +207,7 @@ public class RobotContainer {
     controller
         .options()
         .onTrue(
-            Commands.runOnce(
-                () -> superstructure.setState(State.INTAKE_CLOSED), superstructure));
+            Commands.runOnce(() -> superstructure.setState(State.INTAKE_CLOSED), superstructure));
 
     // ── Shooting mode ─────────────────────────────────────────────────────
     final double DEADBAND = 0.1;

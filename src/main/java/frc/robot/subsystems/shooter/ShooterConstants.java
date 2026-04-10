@@ -21,5 +21,5 @@ public final class ShooterConstants {
   public static final double kD = 0.0;
   public static final double kS = 0.0;
   public static final double kV = 0.125;
-  public static final double kA = 0.0;
+  public static final double kA = 0.1;
 }
