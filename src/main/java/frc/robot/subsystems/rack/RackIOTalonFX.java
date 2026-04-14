@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.rack;
 
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
@@ -42,6 +48,7 @@ public class RackIOTalonFX implements RackIO {
   private final StatusSignal<AngularVelocity> velocity;
   private final StatusSignal<Voltage> appliedVolts;
   private final StatusSignal<Current> current;
+  private final StatusSignal<Current> supplyCurrent;
 
   // Connection debouncer
   private final Debouncer connectedDebouncer = new Debouncer(0.5);
@@ -92,9 +99,11 @@ public class RackIOTalonFX implements RackIO {
     velocity = motor.getVelocity();
     appliedVolts = motor.getMotorVoltage();
     current = motor.getStatorCurrent();
+    supplyCurrent = motor.getSupplyCurrent();
 
     // Set update frequencies — on CANivore (CAN FD), use higher rates; rack moves fast
-    BaseStatusSignal.setUpdateFrequencyForAll(200, position, velocity, appliedVolts, current);
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        200, position, velocity, appliedVolts, current, supplyCurrent);
 
     // Optimize CAN bus utilization
     ParentDevice.optimizeBusUtilizationForAll(motor);
@@ -102,7 +111,7 @@ public class RackIOTalonFX implements RackIO {
 
   @Override
   public void updateInputs(RackIOInputs inputs) {
-    StatusCode status = BaseStatusSignal.refreshAll(position, velocity, appliedVolts, current);
+    StatusCode status = BaseStatusSignal.refreshAll(position, velocity, appliedVolts, current, supplyCurrent);
 
     inputs.motorConnected = connectedDebouncer.calculate(status.isOK());
     inputs.motorPositionDegrees =
@@ -113,6 +122,7 @@ public class RackIOTalonFX implements RackIO {
     inputs.mechanismPositionMeters = motorRotationsToMeters(position.getValueAsDouble());
     inputs.motorVoltage = appliedVolts.getValueAsDouble();
     inputs.motorCurrent = current.getValueAsDouble();
+    inputs.motorSupplyCurrent = supplyCurrent.getValueAsDouble();
   }
 
   @Override

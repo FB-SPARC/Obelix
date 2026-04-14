@@ -4,7 +4,6 @@
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file
 // at the root directory of this project.
-
 package frc.robot.subsystems.drive;
 
 import static edu.wpi.first.units.Units.*;
@@ -40,7 +39,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
-import frc.robot.Constants.Mode;
 import frc.robot.Robot;
 import frc.robot.RobotState;
 import frc.robot.generated.TunerConstants;
@@ -221,15 +219,13 @@ public class Drive extends FullSubsystem {
     // Update gyro alert (gated on showHardwareAlerts() to suppress false positives during boot)
     gyroDisconnectedAlert.set(Robot.showHardwareAlerts() && !gyroInputs.connected);
 
-    // Report total swerve stator current to battery logger (4 drive + 4 turn motors).
-    // Note: stator current, not supply current — reflects torque demand, not battery draw.
-    // Supply current would be more accurate for true energy accounting, but stator is what
-    // Phoenix 6 exposes per-motor and is consistent with all other subsystems in this codebase.
+    // Report total swerve supply current to battery logger (4 drive + 4 turn motors).
+    // Supply current reflects actual battery draw, which is the correct basis for energy accounting.
     double totalDriveCurrent = 0.0;
     for (var module : modules) {
       totalDriveCurrent += module.getTotalCurrentAmps();
     }
-    Robot.batteryLogger.reportCurrentUsage("Drive (stator A)", true, totalDriveCurrent);
+    Robot.batteryLogger.reportCurrentUsage("Drive", true, totalDriveCurrent);
 
     // Keep Field2d in sync for Elastic / Shuffleboard
     field2d.setRobotPose(getPose());

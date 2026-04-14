@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.shooter;
 
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
@@ -40,21 +46,25 @@ public class ShooterIOTalonFX implements ShooterIO {
   private final StatusSignal<AngularVelocity> leaderVelocity;
   private final StatusSignal<Voltage> leaderAppliedVolts;
   private final StatusSignal<Current> leaderCurrent;
+  private final StatusSignal<Current> leaderSupplyCurrent;
 
   // Follower 1 status signals
   private final StatusSignal<AngularVelocity> follower1Velocity;
   private final StatusSignal<Voltage> follower1AppliedVolts;
   private final StatusSignal<Current> follower1Current;
+  private final StatusSignal<Current> follower1SupplyCurrent;
 
   // Follower 2 status signals
   private final StatusSignal<AngularVelocity> follower2Velocity;
   private final StatusSignal<Voltage> follower2AppliedVolts;
   private final StatusSignal<Current> follower2Current;
+  private final StatusSignal<Current> follower2SupplyCurrent;
 
   // Follower 3 status signals
   private final StatusSignal<AngularVelocity> follower3Velocity;
   private final StatusSignal<Voltage> follower3AppliedVolts;
   private final StatusSignal<Current> follower3Current;
+  private final StatusSignal<Current> follower3SupplyCurrent;
 
   // Connection debouncers
   private final Debouncer leaderDebouncer = new Debouncer(0.5);
@@ -107,18 +117,22 @@ public class ShooterIOTalonFX implements ShooterIO {
     leaderVelocity = leaderMotor.getVelocity();
     leaderAppliedVolts = leaderMotor.getMotorVoltage();
     leaderCurrent = leaderMotor.getStatorCurrent();
+    leaderSupplyCurrent = leaderMotor.getSupplyCurrent();
 
     follower1Velocity = followerMotor1.getVelocity();
     follower1AppliedVolts = followerMotor1.getMotorVoltage();
     follower1Current = followerMotor1.getStatorCurrent();
+    follower1SupplyCurrent = followerMotor1.getSupplyCurrent();
 
     follower2Velocity = followerMotor2.getVelocity();
     follower2AppliedVolts = followerMotor2.getMotorVoltage();
     follower2Current = followerMotor2.getStatorCurrent();
+    follower2SupplyCurrent = followerMotor2.getSupplyCurrent();
 
     follower3Velocity = followerMotor3.getVelocity();
     follower3AppliedVolts = followerMotor3.getMotorVoltage();
     follower3Current = followerMotor3.getStatorCurrent();
+    follower3SupplyCurrent = followerMotor3.getSupplyCurrent();
 
     // Set update frequencies — on CANivore (CAN FD), use higher rates
     BaseStatusSignal.setUpdateFrequencyForAll(
@@ -126,15 +140,19 @@ public class ShooterIOTalonFX implements ShooterIO {
         leaderVelocity,
         leaderAppliedVolts,
         leaderCurrent,
+        leaderSupplyCurrent,
         follower1Velocity,
         follower1AppliedVolts,
         follower1Current,
+        follower1SupplyCurrent,
         follower2Velocity,
         follower2AppliedVolts,
         follower2Current,
+        follower2SupplyCurrent,
         follower3Velocity,
         follower3AppliedVolts,
-        follower3Current);
+        follower3Current,
+        follower3SupplyCurrent);
 
     // Optimize CAN bus utilization
     ParentDevice.optimizeBusUtilizationForAll(
@@ -145,35 +163,43 @@ public class ShooterIOTalonFX implements ShooterIO {
   public void updateInputs(ShooterIOInputs inputs) {
     // Leader
     StatusCode leaderStatus =
-        BaseStatusSignal.refreshAll(leaderVelocity, leaderAppliedVolts, leaderCurrent);
+        BaseStatusSignal.refreshAll(
+            leaderVelocity, leaderAppliedVolts, leaderCurrent, leaderSupplyCurrent);
     inputs.leaderMotorConnected = leaderDebouncer.calculate(leaderStatus.isOK());
     inputs.leaderMotorVelocityRPM = leaderVelocity.getValueAsDouble() * 60.0;
     inputs.leaderMotorVoltage = leaderAppliedVolts.getValueAsDouble();
     inputs.leaderMotorCurrent = leaderCurrent.getValueAsDouble();
+    inputs.leaderMotorSupplyCurrent = leaderSupplyCurrent.getValueAsDouble();
 
     // Follower 1
     StatusCode f1Status =
-        BaseStatusSignal.refreshAll(follower1Velocity, follower1AppliedVolts, follower1Current);
+        BaseStatusSignal.refreshAll(
+            follower1Velocity, follower1AppliedVolts, follower1Current, follower1SupplyCurrent);
     inputs.followerMotor1Connected = follower1Debouncer.calculate(f1Status.isOK());
     inputs.followerMotor1VelocityRPM = follower1Velocity.getValueAsDouble() * 60.0;
     inputs.followerMotor1Voltage = follower1AppliedVolts.getValueAsDouble();
     inputs.followerMotor1Current = follower1Current.getValueAsDouble();
+    inputs.followerMotor1SupplyCurrent = follower1SupplyCurrent.getValueAsDouble();
 
     // Follower 2
     StatusCode f2Status =
-        BaseStatusSignal.refreshAll(follower2Velocity, follower2AppliedVolts, follower2Current);
+        BaseStatusSignal.refreshAll(
+            follower2Velocity, follower2AppliedVolts, follower2Current, follower2SupplyCurrent);
     inputs.followerMotor2Connected = follower2Debouncer.calculate(f2Status.isOK());
     inputs.followerMotor2VelocityRPM = follower2Velocity.getValueAsDouble() * 60.0;
     inputs.followerMotor2Voltage = follower2AppliedVolts.getValueAsDouble();
     inputs.followerMotor2Current = follower2Current.getValueAsDouble();
+    inputs.followerMotor2SupplyCurrent = follower2SupplyCurrent.getValueAsDouble();
 
     // Follower 3
     StatusCode f3Status =
-        BaseStatusSignal.refreshAll(follower3Velocity, follower3AppliedVolts, follower3Current);
+        BaseStatusSignal.refreshAll(
+            follower3Velocity, follower3AppliedVolts, follower3Current, follower3SupplyCurrent);
     inputs.followerMotor3Connected = follower3Debouncer.calculate(f3Status.isOK());
     inputs.followerMotor3VelocityRPM = follower3Velocity.getValueAsDouble() * 60.0;
     inputs.followerMotor3Voltage = follower3AppliedVolts.getValueAsDouble();
     inputs.followerMotor3Current = follower3Current.getValueAsDouble();
+    inputs.followerMotor3SupplyCurrent = follower3SupplyCurrent.getValueAsDouble();
   }
 
   @Override

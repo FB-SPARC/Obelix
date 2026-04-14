@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.rack;
 
 import org.littletonrobotics.junction.AutoLog;
@@ -7,6 +13,7 @@ public interface RackIO {
   public static class RackIOInputs {
     public boolean motorConnected = false;
     public double motorCurrent = 0.0;
+    public double motorSupplyCurrent = 0.0;
     public double motorVoltage = 0.0;
     public double motorPositionDegrees = 0.0;
     public double motorVelocityDegreesPerSecond = 0.0;

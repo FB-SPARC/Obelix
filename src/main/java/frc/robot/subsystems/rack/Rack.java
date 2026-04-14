@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.rack;
 
 import edu.wpi.first.wpilibj.Alert;
@@ -38,7 +44,7 @@ public class Rack extends FullSubsystem {
 
     motorDisconnectedAlert.set(Robot.showHardwareAlerts() && !inputs.motorConnected);
 
-    Robot.batteryLogger.reportCurrentUsage("Rack", false, inputs.motorCurrent);
+    Robot.batteryLogger.reportCurrentUsage("Rack", false, inputs.motorSupplyCurrent);
 
     if (DriverStation.isDisabled()) {
       outputs.mode = RackOutputMode.BRAKE;

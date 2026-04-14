@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.shooter;
 
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -29,21 +35,25 @@ public class ShooterIOSim implements ShooterIO {
     inputs.leaderMotorVelocityRPM = velocityRPM;
     inputs.leaderMotorVoltage = appliedVoltage;
     inputs.leaderMotorCurrent = current / 4.0;
+    inputs.leaderMotorSupplyCurrent = (current / 4.0) * Math.abs(appliedVoltage) / 12.0;
 
     inputs.followerMotor1Connected = true;
     inputs.followerMotor1VelocityRPM = velocityRPM;
     inputs.followerMotor1Voltage = appliedVoltage;
     inputs.followerMotor1Current = current / 4.0;
+    inputs.followerMotor1SupplyCurrent = (current / 4.0) * Math.abs(appliedVoltage) / 12.0;
 
     inputs.followerMotor2Connected = true;
     inputs.followerMotor2VelocityRPM = velocityRPM;
     inputs.followerMotor2Voltage = appliedVoltage;
     inputs.followerMotor2Current = current / 4.0;
+    inputs.followerMotor2SupplyCurrent = (current / 4.0) * Math.abs(appliedVoltage) / 12.0;
 
     inputs.followerMotor3Connected = true;
     inputs.followerMotor3VelocityRPM = velocityRPM;
     inputs.followerMotor3Voltage = appliedVoltage;
     inputs.followerMotor3Current = current / 4.0;
+    inputs.followerMotor3SupplyCurrent = (current / 4.0) * Math.abs(appliedVoltage) / 12.0;
   }
 
   @Override

@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.feeder;
 
 import edu.wpi.first.wpilibj.Alert;
@@ -41,7 +47,7 @@ public class Feeder extends FullSubsystem {
     followerDisconnectedAlert.set(Robot.showHardwareAlerts() && !inputs.followerMotorConnected);
 
     Robot.batteryLogger.reportCurrentUsage(
-        "Feeder", false, inputs.leaderMotorCurrent + inputs.followerMotorCurrent);
+        "Feeder", false, inputs.leaderMotorSupplyCurrent + inputs.followerMotorSupplyCurrent);
 
     if (DriverStation.isDisabled()) {
       outputs.mode = FeederOutputMode.BRAKE;

@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.bed;
 
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -29,11 +35,13 @@ public class BedIOSim implements BedIO {
     inputs.leaderMotorVelocityRPM = velocityRPM;
     inputs.leaderMotorVoltage = appliedVoltage;
     inputs.leaderMotorCurrent = current / 2.0;
+    inputs.leaderMotorSupplyCurrent = (current / 2.0) * Math.abs(appliedVoltage) / 12.0;
 
     inputs.followerMotorConnected = true;
     inputs.followerMotorVelocityRPM = velocityRPM;
     inputs.followerMotorVoltage = appliedVoltage;
     inputs.followerMotorCurrent = current / 2.0;
+    inputs.followerMotorSupplyCurrent = (current / 2.0) * Math.abs(appliedVoltage) / 12.0;
   }
 
   @Override

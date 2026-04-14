@@ -4,7 +4,6 @@
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file
 // at the root directory of this project.
-
 package frc.robot;
 
 import edu.wpi.first.math.Matrix;
@@ -23,7 +22,6 @@ import edu.wpi.first.math.numbers.N3;
 import frc.robot.subsystems.drive.Drive;
 import java.util.NoSuchElementException;
 import org.littletonrobotics.junction.AutoLogOutput;
-import org.littletonrobotics.junction.Logger;
 
 /**
  * Centralises robot state: pose estimation, velocity tracking, and timestamped pose lookup.
@@ -80,6 +78,7 @@ public class RobotState {
   private Pose2d estimatedPose = Pose2d.kZero;
 
   /** Robot-relative measured chassis speeds — set each loop by Drive. */
+  @AutoLogOutput(key = "RobotState/RobotVelocity")
   private ChassisSpeeds robotVelocity = new ChassisSpeeds();
 
   // History buffer for vision latency compensation
@@ -221,7 +220,6 @@ public class RobotState {
    */
   public void setRobotVelocity(ChassisSpeeds speeds) {
     robotVelocity = speeds;
-    Logger.recordOutput("RobotState/RobotVelocity", speeds);
   }
 
   /** Returns the latest robot-relative measured {@link ChassisSpeeds}. */

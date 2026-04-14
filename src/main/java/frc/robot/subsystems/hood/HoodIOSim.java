@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.hood;
 
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -51,6 +57,7 @@ public class HoodIOSim implements HoodIO {
     inputs.motorVelocityDegreesPerSecond = Units.radiansToDegrees(sim.getVelocityRadPerSec());
     inputs.motorVoltage = appliedVoltage;
     inputs.motorCurrent = sim.getCurrentDrawAmps();
+    inputs.motorSupplyCurrent = sim.getCurrentDrawAmps() * Math.abs(appliedVoltage) / 12.0;
     inputs.mechanismPositionDegrees = Units.radiansToDegrees(sim.getAngleRads());
     inputs.encoderConnected = true;
     inputs.absoluteEncoderPositionDegrees = Units.radiansToDegrees(sim.getAngleRads());

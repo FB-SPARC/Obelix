@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.hood;
 
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
@@ -45,6 +51,7 @@ public class HoodIOTalonFX implements HoodIO {
   private final StatusSignal<AngularVelocity> motorVelocity;
   private final StatusSignal<Voltage> motorAppliedVolts;
   private final StatusSignal<Current> motorCurrent;
+  private final StatusSignal<Current> motorSupplyCurrent;
 
   // Encoder status signals
   private final StatusSignal<Angle> encoderAbsolutePosition;
@@ -111,6 +118,7 @@ public class HoodIOTalonFX implements HoodIO {
     motorVelocity = motor.getVelocity();
     motorAppliedVolts = motor.getMotorVoltage();
     motorCurrent = motor.getStatorCurrent();
+    motorSupplyCurrent = motor.getSupplyCurrent();
 
     // Initialize encoder status signals
     encoderAbsolutePosition = encoder.getAbsolutePosition();
@@ -122,6 +130,7 @@ public class HoodIOTalonFX implements HoodIO {
         motorVelocity,
         motorAppliedVolts,
         motorCurrent,
+        motorSupplyCurrent,
         encoderAbsolutePosition);
 
     // Optimize CAN bus utilization
@@ -131,7 +140,8 @@ public class HoodIOTalonFX implements HoodIO {
   @Override
   public void updateInputs(HoodIOInputs inputs) {
     StatusCode motorStatus =
-        BaseStatusSignal.refreshAll(motorPosition, motorVelocity, motorAppliedVolts, motorCurrent);
+        BaseStatusSignal.refreshAll(
+            motorPosition, motorVelocity, motorAppliedVolts, motorCurrent, motorSupplyCurrent);
     StatusCode encoderStatus = BaseStatusSignal.refreshAll(encoderAbsolutePosition);
 
     inputs.motorConnected = motorConnectedDebouncer.calculate(motorStatus.isOK());
@@ -140,6 +150,7 @@ public class HoodIOTalonFX implements HoodIO {
         Units.rotationsToDegrees(motorVelocity.getValueAsDouble());
     inputs.motorVoltage = motorAppliedVolts.getValueAsDouble();
     inputs.motorCurrent = motorCurrent.getValueAsDouble();
+    inputs.motorSupplyCurrent = motorSupplyCurrent.getValueAsDouble();
     // With FusedCANcoder, motor.getPosition() reports mechanism rotations directly
     inputs.mechanismPositionDegrees = Units.rotationsToDegrees(motorPosition.getValueAsDouble());
 

@@ -4,7 +4,6 @@
 // Use of this source code is governed by a BSD
 // license that can be found in the LICENSE file
 // at the root directory of this project.
-
 package frc.robot.subsystems.drive;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
@@ -136,14 +135,13 @@ public class Module {
   }
 
   /**
-   * Returns the total stator current draw of this module in amps (drive motor + turn motor).
+   * Returns the total supply current draw of this module in amps (drive motor + turn motor).
    *
-   * <p>Stator current reflects motor torque output and is what the stator current limit is applied
-   * to. It is higher than supply current under normal operation and is the appropriate value to use
-   * for energy/thermal budgeting.
+   * <p>Supply current is what actually flows from the battery, making it the correct value for
+   * energy and power accounting.
    */
   public double getTotalCurrentAmps() {
-    return inputs.driveCurrentAmps + inputs.turnCurrentAmps;
+    return inputs.driveSupplyCurrentAmps + inputs.turnSupplyCurrentAmps;
   }
 
   /** Returns the module velocity in rotations/sec (Phoenix native units). */

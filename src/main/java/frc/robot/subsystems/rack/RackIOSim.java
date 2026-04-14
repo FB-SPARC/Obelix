@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.rack;
 
 import edu.wpi.first.math.controller.ElevatorFeedforward;
@@ -60,6 +66,7 @@ public class RackIOSim implements RackIO {
             * 360.0;
     inputs.motorVoltage = appliedVoltage;
     inputs.motorCurrent = sim.getCurrentDrawAmps();
+    inputs.motorSupplyCurrent = sim.getCurrentDrawAmps() * Math.abs(appliedVoltage) / 12.0;
     inputs.rackPositionMeters = sim.getPositionMeters();
     inputs.mechanismPositionMeters = sim.getPositionMeters();
   }

@@ -1,3 +1,9 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 package frc.robot.subsystems.intake;
 
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
@@ -36,11 +42,13 @@ public class IntakeIOTalonFX implements IntakeIO {
   private final StatusSignal<AngularVelocity> leaderVelocity;
   private final StatusSignal<Voltage> leaderAppliedVolts;
   private final StatusSignal<Current> leaderCurrent;
+  private final StatusSignal<Current> leaderSupplyCurrent;
 
   // Follower status signals
   private final StatusSignal<AngularVelocity> followerVelocity;
   private final StatusSignal<Voltage> followerAppliedVolts;
   private final StatusSignal<Current> followerCurrent;
+  private final StatusSignal<Current> followerSupplyCurrent;
 
   // Connection debouncers
   private final Debouncer leaderConnectedDebouncer = new Debouncer(0.5);
@@ -74,11 +82,13 @@ public class IntakeIOTalonFX implements IntakeIO {
     leaderVelocity = leaderMotor.getVelocity();
     leaderAppliedVolts = leaderMotor.getMotorVoltage();
     leaderCurrent = leaderMotor.getStatorCurrent();
+    leaderSupplyCurrent = leaderMotor.getSupplyCurrent();
 
     // Initialize follower status signals
     followerVelocity = followerMotor.getVelocity();
     followerAppliedVolts = followerMotor.getMotorVoltage();
     followerCurrent = followerMotor.getStatorCurrent();
+    followerSupplyCurrent = followerMotor.getSupplyCurrent();
 
     // Set update frequencies — on CANivore (CAN FD), use higher rates
     BaseStatusSignal.setUpdateFrequencyForAll(
@@ -86,9 +96,11 @@ public class IntakeIOTalonFX implements IntakeIO {
         leaderVelocity,
         leaderAppliedVolts,
         leaderCurrent,
+        leaderSupplyCurrent,
         followerVelocity,
         followerAppliedVolts,
-        followerCurrent);
+        followerCurrent,
+        followerSupplyCurrent);
 
     // Optimize CAN bus utilization
     ParentDevice.optimizeBusUtilizationForAll(leaderMotor, followerMotor);
@@ -97,19 +109,23 @@ public class IntakeIOTalonFX implements IntakeIO {
   @Override
   public void updateInputs(IntakeIOInputs inputs) {
     StatusCode leaderStatus =
-        BaseStatusSignal.refreshAll(leaderVelocity, leaderAppliedVolts, leaderCurrent);
+        BaseStatusSignal.refreshAll(
+            leaderVelocity, leaderAppliedVolts, leaderCurrent, leaderSupplyCurrent);
     StatusCode followerStatus =
-        BaseStatusSignal.refreshAll(followerVelocity, followerAppliedVolts, followerCurrent);
+        BaseStatusSignal.refreshAll(
+            followerVelocity, followerAppliedVolts, followerCurrent, followerSupplyCurrent);
 
     inputs.leaderMotorConnected = leaderConnectedDebouncer.calculate(leaderStatus.isOK());
     inputs.leaderMotorVelocityRPM = leaderVelocity.getValueAsDouble() * 60.0;
     inputs.leaderMotorVoltage = leaderAppliedVolts.getValueAsDouble();
     inputs.leaderMotorCurrent = leaderCurrent.getValueAsDouble();
+    inputs.leaderMotorSupplyCurrent = leaderSupplyCurrent.getValueAsDouble();
 
     inputs.followerMotorConnected = followerConnectedDebouncer.calculate(followerStatus.isOK());
     inputs.followerMotorVelocityRPM = followerVelocity.getValueAsDouble() * 60.0;
     inputs.followerMotorVoltage = followerAppliedVolts.getValueAsDouble();
     inputs.followerMotorCurrent = followerCurrent.getValueAsDouble();
+    inputs.followerMotorSupplyCurrent = followerSupplyCurrent.getValueAsDouble();
   }
 
   @Override
