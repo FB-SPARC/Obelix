@@ -220,7 +220,8 @@ public class Drive extends FullSubsystem {
     gyroDisconnectedAlert.set(Robot.showHardwareAlerts() && !gyroInputs.connected);
 
     // Report total swerve supply current to battery logger (4 drive + 4 turn motors).
-    // Supply current reflects actual battery draw, which is the correct basis for energy accounting.
+    // Supply current reflects actual battery draw, which is the correct basis for energy
+    // accounting.
     double totalDriveCurrent = 0.0;
     for (var module : modules) {
       totalDriveCurrent += module.getTotalCurrentAmps();

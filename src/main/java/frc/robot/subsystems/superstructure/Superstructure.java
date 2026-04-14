@@ -22,6 +22,7 @@ import frc.robot.subsystems.rack.RackConstants;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.LoggedTracer;
+import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.ShotControl;
 import org.littletonrobotics.junction.Logger;
 
@@ -48,7 +49,8 @@ public class Superstructure extends SubsystemBase {
   private final Shooter shooter;
   private final Drive drive;
 
-  private static final double SHOOTER_RPM_SCALE = 1.95;
+  private static final LoggedTunableNumber shooterRpmScale =
+      new LoggedTunableNumber("Superstructure/ShooterRPMScale", 1.95);
 
   // ── State machine ──────────────────────────────────────────────────────────
   public enum State {
@@ -105,26 +107,6 @@ public class Superstructure extends SubsystemBase {
   /** Returns true when the superstructure is in the shooting state. */
   public boolean isShooting() {
     return currentState == State.SHOOTING;
-  }
-
-  /**
-   * Increments the hood angle trim offset. Bind to POV right (+0.2°) and POV left (-0.2°) with
-   * whileTrue + repeat-on-hold for in-match shot adjustment without redeploying.
-   *
-   * @param deltaDeg degrees to add (positive = up, negative = down)
-   */
-  public void incrementHoodAngleOffset(double deltaDeg) {
-    sc.incrementHoodAngleOffset(deltaDeg);
-  }
-
-  /** Returns the current hood angle trim offset in degrees (for dashboard display). */
-  public double getHoodAngleOffset() {
-    return sc.getHoodAngleOffset();
-  }
-
-  /** Resets the hood angle trim offset to zero. */
-  public void resetHoodAngleOffset() {
-    sc.resetHoodAngleOffset();
   }
 
   // ── State handlers ─────────────────────────────────────────────────────────
@@ -198,7 +180,7 @@ public class Superstructure extends SubsystemBase {
     // Intentionally use negative distance because the shot-solution polynomials are decreasing
     // functions
     double distanceToTarget = -getDistanceToTarget();
-    double shooterRPMGoal = sc.getFlywheelRPM(distanceToTarget) * SHOOTER_RPM_SCALE;
+    double shooterRPMGoal = sc.getFlywheelRPM(distanceToTarget) * shooterRpmScale.get();
     double hoodAngleGoal = sc.getHoodAngle(distanceToTarget);
 
     // Log telemetry for dashboard/debugging
@@ -297,7 +279,6 @@ public class Superstructure extends SubsystemBase {
   @Override
   public void periodic() {
     Logger.recordOutput("Superstructure/State", currentState.toString());
-    Logger.recordOutput("Superstructure/ShotControl/HoodAngleOffsetDeg", sc.getHoodAngleOffset());
 
     Pose2d robotPose = drive.getPose();
     Translation2d shooterTranslation =

@@ -31,7 +31,7 @@ public final class Constants {
    * If true, PID/FF gains are exposed on NetworkTables and can be changed without a redeploy. Set
    * to false for competition.
    */
-  public static final boolean tuningMode = false;
+  public static final boolean tuningMode = true;
 
   public static enum Mode {
     /** Running on a real robot. */

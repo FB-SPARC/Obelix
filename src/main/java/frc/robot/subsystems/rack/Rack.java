@@ -14,6 +14,7 @@ import frc.robot.subsystems.rack.RackIO.RackIOOutputs;
 import frc.robot.subsystems.rack.RackIO.RackOutputMode;
 import frc.robot.util.FullSubsystem;
 import frc.robot.util.LoggedTracer;
+import frc.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -28,6 +29,20 @@ public class Rack extends FullSubsystem {
   private final RackIO io;
   private final RackIOInputsAutoLogged inputs = new RackIOInputsAutoLogged();
   private final RackIOOutputs outputs = new RackIOOutputs();
+
+  // ── Tunable PID/FF gains ──────────────────────────────────────────────────
+  private static final LoggedTunableNumber kP =
+      new LoggedTunableNumber("Rack/kP", RackConstants.kP);
+  private static final LoggedTunableNumber kI =
+      new LoggedTunableNumber("Rack/kI", RackConstants.kI);
+  private static final LoggedTunableNumber kD =
+      new LoggedTunableNumber("Rack/kD", RackConstants.kD);
+  private static final LoggedTunableNumber kS =
+      new LoggedTunableNumber("Rack/kS", RackConstants.kS);
+  private static final LoggedTunableNumber kV =
+      new LoggedTunableNumber("Rack/kV", RackConstants.kV);
+  private static final LoggedTunableNumber kA =
+      new LoggedTunableNumber("Rack/kA", RackConstants.kA);
 
   private final Alert motorDisconnectedAlert =
       new Alert("Rack motor disconnected!", AlertType.kError);
@@ -48,6 +63,15 @@ public class Rack extends FullSubsystem {
 
     if (DriverStation.isDisabled()) {
       outputs.mode = RackOutputMode.BRAKE;
+    }
+
+    if (kP.hasChanged(hashCode())
+        || kI.hasChanged(hashCode())
+        || kD.hasChanged(hashCode())
+        || kS.hasChanged(hashCode())
+        || kV.hasChanged(hashCode())
+        || kA.hasChanged(hashCode())) {
+      io.setPID(kP.get(), kI.get(), kD.get(), kS.get(), kV.get(), kA.get());
     }
 
     LoggedTracer.record("Rack");

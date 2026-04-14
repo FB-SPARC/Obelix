@@ -284,26 +284,6 @@ public class RobotContainer {
     controller
         .touchpad()
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.IDLE), superstructure));
-
-    // ── Hood angle trim ───────────────────────────────────────────────────────
-    // POV right: +0.2° per press (hold for continuous trim)
-    controller
-        .povRight()
-        .onTrue(Commands.runOnce(() -> superstructure.incrementHoodAngleOffset(0.2)))
-        .whileTrue(
-            Commands.repeatingSequence(
-                new edu.wpi.first.wpilibj2.command.WaitCommand(0.4),
-                Commands.runOnce(() -> superstructure.incrementHoodAngleOffset(0.2))));
-    // POV left: -0.2° per press (hold for continuous trim)
-    controller
-        .povLeft()
-        .onTrue(Commands.runOnce(() -> superstructure.incrementHoodAngleOffset(-0.2)))
-        .whileTrue(
-            Commands.repeatingSequence(
-                new edu.wpi.first.wpilibj2.command.WaitCommand(0.4),
-                Commands.runOnce(() -> superstructure.incrementHoodAngleOffset(-0.2))));
-    // POV down: reset trim to zero
-    controller.povDown().onTrue(Commands.runOnce(() -> superstructure.resetHoodAngleOffset()));
   }
 
   //   public void teleopInit() {
@@ -324,8 +304,5 @@ public class RobotContainer {
     // Update controller disconnection alert
     controllerDisconnectedAlert.set(
         !DriverStation.isJoystickConnected(controller.getHID().getPort()));
-    // Display hood angle trim on dashboard so operator can monitor it
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
-        "Hood Angle Offset (deg)", superstructure.getHoodAngleOffset());
   }
 }

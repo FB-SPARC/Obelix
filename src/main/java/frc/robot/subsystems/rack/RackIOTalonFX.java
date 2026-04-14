@@ -111,7 +111,8 @@ public class RackIOTalonFX implements RackIO {
 
   @Override
   public void updateInputs(RackIOInputs inputs) {
-    StatusCode status = BaseStatusSignal.refreshAll(position, velocity, appliedVolts, current, supplyCurrent);
+    StatusCode status =
+        BaseStatusSignal.refreshAll(position, velocity, appliedVolts, current, supplyCurrent);
 
     inputs.motorConnected = connectedDebouncer.calculate(status.isOK());
     inputs.motorPositionDegrees =
@@ -152,5 +153,17 @@ public class RackIOTalonFX implements RackIO {
   private double motorRotationsToMeters(double motorRotations) {
     double mechanismRotations = motorRotations / RackConstants.kGearRatio;
     return mechanismRotations * kPinionCircumferenceMeters;
+  }
+
+  @Override
+  public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
+    var slot0 = new com.ctre.phoenix6.configs.Slot0Configs();
+    slot0.kP = kP;
+    slot0.kI = kI;
+    slot0.kD = kD;
+    slot0.kS = kS;
+    slot0.kV = kV;
+    slot0.kA = kA;
+    motor.getConfigurator().apply(slot0);
   }
 }

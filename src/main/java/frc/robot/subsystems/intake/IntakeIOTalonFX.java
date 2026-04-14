@@ -140,4 +140,16 @@ public class IntakeIOTalonFX implements IntakeIO {
       case VOLTAGE -> leaderMotor.setControl(voltageRequest.withOutput(outputs.volts));
     }
   }
+
+  @Override
+  public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
+    var slot0 = new com.ctre.phoenix6.configs.Slot0Configs();
+    slot0.kP = kP;
+    slot0.kI = kI;
+    slot0.kD = kD;
+    slot0.kS = kS;
+    slot0.kV = kV;
+    slot0.kA = kA;
+    leaderMotor.getConfigurator().apply(slot0);
+  }
 }

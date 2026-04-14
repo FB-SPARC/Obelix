@@ -41,4 +41,7 @@ public interface RackIO {
   public default void updateInputs(RackIOInputs inputs) {}
 
   public default void applyOutputs(RackIOOutputs outputs) {}
+
+  /** Applies updated PID/FF gains to the motor controller (no-op in sim). */
+  public default void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {}
 }

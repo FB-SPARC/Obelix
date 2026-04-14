@@ -14,6 +14,7 @@ import frc.robot.subsystems.intake.IntakeIO.IntakeIOOutputs;
 import frc.robot.subsystems.intake.IntakeIO.IntakeOutputMode;
 import frc.robot.util.FullSubsystem;
 import frc.robot.util.LoggedTracer;
+import frc.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -27,6 +28,20 @@ public class Intake extends FullSubsystem {
   private final IntakeIO io;
   private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
   private final IntakeIOOutputs outputs = new IntakeIOOutputs();
+
+  // ── Tunable PID/FF gains (for future closed-loop intake control) ──────────
+  private static final LoggedTunableNumber kP =
+      new LoggedTunableNumber("Intake/kP", IntakeConstants.kP);
+  private static final LoggedTunableNumber kI =
+      new LoggedTunableNumber("Intake/kI", IntakeConstants.kI);
+  private static final LoggedTunableNumber kD =
+      new LoggedTunableNumber("Intake/kD", IntakeConstants.kD);
+  private static final LoggedTunableNumber kS =
+      new LoggedTunableNumber("Intake/kS", IntakeConstants.kS);
+  private static final LoggedTunableNumber kV =
+      new LoggedTunableNumber("Intake/kV", IntakeConstants.kV);
+  private static final LoggedTunableNumber kA =
+      new LoggedTunableNumber("Intake/kA", IntakeConstants.kA);
 
   private final Alert leaderDisconnectedAlert =
       new Alert("Intake leader motor disconnected!", AlertType.kError);
@@ -51,6 +66,15 @@ public class Intake extends FullSubsystem {
 
     if (DriverStation.isDisabled()) {
       outputs.mode = IntakeOutputMode.BRAKE;
+    }
+
+    if (kP.hasChanged(hashCode())
+        || kI.hasChanged(hashCode())
+        || kD.hasChanged(hashCode())
+        || kS.hasChanged(hashCode())
+        || kV.hasChanged(hashCode())
+        || kA.hasChanged(hashCode())) {
+      io.setPID(kP.get(), kI.get(), kD.get(), kS.get(), kV.get(), kA.get());
     }
 
     LoggedTracer.record("Intake");

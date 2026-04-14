@@ -53,4 +53,9 @@ public class VisionConstants {
   public static double linearStdDevMegatag2Factor = 0.5; // More stable than full 3D solve
   public static double angularStdDevMegatag2Factor =
       Double.POSITIVE_INFINITY; // No rotation data available
+
+  // Per-meter/s of robot speed, inflate linearStdDev by this fraction.
+  // At 3 m/s, a factor of 0.5 triples the std dev (1 + 0.5*3 = 2.5×) so fast-moving
+  // observations are trusted much less than stationary ones.
+  public static double velocityLinearStdDevScaleFactor = 0.5;
 }

@@ -137,6 +137,15 @@ public class Vision extends VirtualSubsystem {
           angularStdDev *= cameraStdDevFactors[cameraIndex];
         }
 
+        // Scale std devs by robot speed: a fast-moving robot has more latency-induced
+        // pose error, so we trust vision less. Factor = 1 + k*speed, e.g. at 3 m/s
+        // with k=0.5 the std dev is 2.5× larger than at rest.
+        var robotVelocity = RobotState.getInstance().getRobotVelocity();
+        double robotSpeedMetersPerSec =
+            Math.hypot(robotVelocity.vxMetersPerSecond, robotVelocity.vyMetersPerSecond);
+        double velocityFactor = 1.0 + velocityLinearStdDevScaleFactor * robotSpeedMetersPerSec;
+        linearStdDev *= velocityFactor;
+
         // Send vision observation to RobotState
         RobotState.getInstance()
             .addVisionMeasurement(

@@ -14,6 +14,7 @@ import frc.robot.subsystems.bed.BedIO.BedIOOutputs;
 import frc.robot.subsystems.bed.BedIO.BedOutputMode;
 import frc.robot.util.FullSubsystem;
 import frc.robot.util.LoggedTracer;
+import frc.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -27,6 +28,20 @@ public class Bed extends FullSubsystem {
   private final BedIO io;
   private final BedIOInputsAutoLogged inputs = new BedIOInputsAutoLogged();
   private final BedIOOutputs outputs = new BedIOOutputs();
+
+  // ── Tunable PID/FF gains ──────────────────────────────────────────────────
+  private static final LoggedTunableNumber kP =
+      new LoggedTunableNumber("Bed/kP", BedConstants.kP);
+  private static final LoggedTunableNumber kI =
+      new LoggedTunableNumber("Bed/kI", BedConstants.kI);
+  private static final LoggedTunableNumber kD =
+      new LoggedTunableNumber("Bed/kD", BedConstants.kD);
+  private static final LoggedTunableNumber kS =
+      new LoggedTunableNumber("Bed/kS", BedConstants.kS);
+  private static final LoggedTunableNumber kV =
+      new LoggedTunableNumber("Bed/kV", BedConstants.kV);
+  private static final LoggedTunableNumber kA =
+      new LoggedTunableNumber("Bed/kA", BedConstants.kA);
 
   private final Alert leaderDisconnectedAlert =
       new Alert("Bed leader motor disconnected!", AlertType.kError);
@@ -51,6 +66,15 @@ public class Bed extends FullSubsystem {
 
     if (DriverStation.isDisabled()) {
       outputs.mode = BedOutputMode.BRAKE;
+    }
+
+    if (kP.hasChanged(hashCode())
+        || kI.hasChanged(hashCode())
+        || kD.hasChanged(hashCode())
+        || kS.hasChanged(hashCode())
+        || kV.hasChanged(hashCode())
+        || kA.hasChanged(hashCode())) {
+      io.setPID(kP.get(), kI.get(), kD.get(), kS.get(), kV.get(), kA.get());
     }
 
     LoggedTracer.record("Bed");

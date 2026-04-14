@@ -40,4 +40,7 @@ public interface BedIO {
   public default void updateInputs(BedIOInputs inputs) {}
 
   public default void applyOutputs(BedIOOutputs outputs) {}
+
+  /** Applies updated PID/FF gains to the motor controller (no-op in sim). */
+  public default void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {}
 }

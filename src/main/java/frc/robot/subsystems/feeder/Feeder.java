@@ -14,6 +14,7 @@ import frc.robot.subsystems.feeder.FeederIO.FeederIOOutputs;
 import frc.robot.subsystems.feeder.FeederIO.FeederOutputMode;
 import frc.robot.util.FullSubsystem;
 import frc.robot.util.LoggedTracer;
+import frc.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -27,6 +28,20 @@ public class Feeder extends FullSubsystem {
   private final FeederIO io;
   private final FeederIOInputsAutoLogged inputs = new FeederIOInputsAutoLogged();
   private final FeederIOOutputs outputs = new FeederIOOutputs();
+
+  // ── Tunable PID/FF gains ──────────────────────────────────────────────────
+  private static final LoggedTunableNumber kP =
+      new LoggedTunableNumber("Feeder/kP", FeederConstants.kP);
+  private static final LoggedTunableNumber kI =
+      new LoggedTunableNumber("Feeder/kI", FeederConstants.kI);
+  private static final LoggedTunableNumber kD =
+      new LoggedTunableNumber("Feeder/kD", FeederConstants.kD);
+  private static final LoggedTunableNumber kS =
+      new LoggedTunableNumber("Feeder/kS", FeederConstants.kS);
+  private static final LoggedTunableNumber kV =
+      new LoggedTunableNumber("Feeder/kV", FeederConstants.kV);
+  private static final LoggedTunableNumber kA =
+      new LoggedTunableNumber("Feeder/kA", FeederConstants.kA);
 
   private final Alert leaderDisconnectedAlert =
       new Alert("Feeder leader motor disconnected!", AlertType.kError);
@@ -51,6 +66,15 @@ public class Feeder extends FullSubsystem {
 
     if (DriverStation.isDisabled()) {
       outputs.mode = FeederOutputMode.BRAKE;
+    }
+
+    if (kP.hasChanged(hashCode())
+        || kI.hasChanged(hashCode())
+        || kD.hasChanged(hashCode())
+        || kS.hasChanged(hashCode())
+        || kV.hasChanged(hashCode())
+        || kA.hasChanged(hashCode())) {
+      io.setPID(kP.get(), kI.get(), kD.get(), kS.get(), kV.get(), kA.get());
     }
 
     LoggedTracer.record("Feeder");

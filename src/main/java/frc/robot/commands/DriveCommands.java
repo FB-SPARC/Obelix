@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.util.LoggedTunableNumber;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
@@ -38,6 +39,17 @@ public class DriveCommands {
   private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
   private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
   private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
+
+  // ── Aim-at-point tunable gains (shared by joystickDriveAtAngle and joystickDriveAimAtPoint) ──
+  private static final LoggedTunableNumber aimKP =
+      new LoggedTunableNumber("DriveCommands/AimAtPoint/kP", ANGLE_KP);
+  private static final LoggedTunableNumber aimKD =
+      new LoggedTunableNumber("DriveCommands/AimAtPoint/kD", ANGLE_KD);
+  private static final LoggedTunableNumber aimMaxVelocity =
+      new LoggedTunableNumber("DriveCommands/AimAtPoint/MaxVelocityRadPerSec", ANGLE_MAX_VELOCITY);
+  private static final LoggedTunableNumber aimMaxAcceleration =
+      new LoggedTunableNumber(
+          "DriveCommands/AimAtPoint/MaxAccelerationRadPerSec2", ANGLE_MAX_ACCELERATION);
 
   private DriveCommands() {}
 
@@ -108,15 +120,27 @@ public class DriveCommands {
     // Create PID controller
     ProfiledPIDController angleController =
         new ProfiledPIDController(
-            ANGLE_KP,
+            aimKP.get(),
             0.0,
-            ANGLE_KD,
-            new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+            aimKD.get(),
+            new TrapezoidProfile.Constraints(aimMaxVelocity.get(), aimMaxAcceleration.get()));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
 
     // Construct command
     return Commands.run(
             () -> {
+              // Update gains if changed in tuning mode
+              if (aimKP.hasChanged(angleController.hashCode())
+                  || aimKD.hasChanged(angleController.hashCode())
+                  || aimMaxVelocity.hasChanged(angleController.hashCode())
+                  || aimMaxAcceleration.hasChanged(angleController.hashCode())) {
+                angleController.setP(aimKP.get());
+                angleController.setD(aimKD.get());
+                angleController.setConstraints(
+                    new TrapezoidProfile.Constraints(
+                        aimMaxVelocity.get(), aimMaxAcceleration.get()));
+              }
+
               // Get linear velocity
               Translation2d linearVelocity =
                   getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
@@ -300,14 +324,26 @@ public class DriveCommands {
 
     ProfiledPIDController angleController =
         new ProfiledPIDController(
-            ANGLE_KP,
+            aimKP.get(),
             0.0,
-            ANGLE_KD,
-            new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+            aimKD.get(),
+            new TrapezoidProfile.Constraints(aimMaxVelocity.get(), aimMaxAcceleration.get()));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
 
     return Commands.run(
             () -> {
+              // Update gains if changed in tuning mode
+              if (aimKP.hasChanged(angleController.hashCode())
+                  || aimKD.hasChanged(angleController.hashCode())
+                  || aimMaxVelocity.hasChanged(angleController.hashCode())
+                  || aimMaxAcceleration.hasChanged(angleController.hashCode())) {
+                angleController.setP(aimKP.get());
+                angleController.setD(aimKD.get());
+                angleController.setConstraints(
+                    new TrapezoidProfile.Constraints(
+                        aimMaxVelocity.get(), aimMaxAcceleration.get()));
+              }
+
               // Desired heading: angle from robot → target
               Translation2d robotToTarget =
                   targetSupplier.get().minus(drive.getPose().getTranslation());

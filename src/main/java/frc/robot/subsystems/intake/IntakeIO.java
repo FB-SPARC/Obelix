@@ -38,4 +38,7 @@ public interface IntakeIO {
   public default void updateInputs(IntakeIOInputs inputs) {}
 
   public default void applyOutputs(IntakeIOOutputs outputs) {}
+
+  /** Applies updated PID/FF gains to the motor controller (no-op in sim). */
+  public default void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {}
 }

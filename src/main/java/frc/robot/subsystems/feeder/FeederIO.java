@@ -40,4 +40,7 @@ public interface FeederIO {
   public default void updateInputs(FeederIOInputs inputs) {}
 
   public default void applyOutputs(FeederIOOutputs outputs) {}
+
+  /** Applies updated PID/FF gains to the motor controller (no-op in sim). */
+  public default void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {}
 }

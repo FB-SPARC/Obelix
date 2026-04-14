@@ -7,15 +7,15 @@
 package frc.robot.util;
 
 /**
- * Shot-control utilities: polynomial distance-to-angle/RPM mapping, named launch presets with
- * dashboard-tunable parameters, and an operator-trimmable hood-angle offset.
+ * Shot-control utilities: polynomial distance-to-angle/RPM mapping and an operator-trimmable
+ * hood-angle offset.
  *
  * <p>Usage:
  *
  * <pre>{@code
  * private final ShotControl sc = new ShotControl();
  * // In periodic:
- * double angle = sc.getHoodAngle(distance);   // polynomial + offset
+ * double angle = sc.getHoodAngle(distance);   // polynomial + trim offset
  * double rpm   = sc.getFlywheelRPM(distance); // polynomial
  * // Operator trim (bind to POV buttons):
  * sc.incrementHoodAngleOffset(+0.2);  // POV right
@@ -24,49 +24,10 @@ package frc.robot.util;
  */
 public class ShotControl {
 
-  // ── Named presets ─────────────────────────────────────────────────────────────
-
-  /**
-   * A fixed-distance launch preset whose parameters are tunable from the dashboard at runtime (only
-   * active when {@code Constants.tuningMode = true}).
-   */
-  public static class LaunchPreset {
-    private final LoggedTunableNumber hoodAngleDeg;
-    private final LoggedTunableNumber flywheelRPM;
-
-    /**
-     * @param name dashboard key suffix (e.g. {@code "Tower"})
-     * @param defaultHoodAngle default hood angle in degrees
-     * @param defaultRPM default flywheel RPM
-     */
-    public LaunchPreset(String name, double defaultHoodAngle, double defaultRPM) {
-      hoodAngleDeg = new LoggedTunableNumber("ShotControl/" + name + "/HoodAngleDeg");
-      flywheelRPM = new LoggedTunableNumber("ShotControl/" + name + "/FlywheelRPM");
-      hoodAngleDeg.initDefault(defaultHoodAngle);
-      flywheelRPM.initDefault(defaultRPM);
-    }
-
-    /** Hood angle in degrees for this preset. */
-    public double getHoodAngleDeg() {
-      return hoodAngleDeg.get();
-    }
-
-    /** Flywheel RPM for this preset. */
-    public double getFlywheelRPM() {
-      return flywheelRPM.get();
-    }
-  }
-
-  /** Short-range / tower shot preset. */
-  public static final LaunchPreset towerPreset = new LaunchPreset("Tower", 10.0, 2400.0);
-
-  /** Trench / mid-range shot preset. */
-  public static final LaunchPreset trenchPreset = new LaunchPreset("Trench", 18.0, 3200.0);
-
   // ── Hood angle trim ───────────────────────────────────────────────────────────
 
-  /** Cumulative operator trim added on top of every polynomial / preset lookup (degrees). */
-  private double hoodAngleOffsetDeg = 0.0;
+  /** Cumulative operator trim added on top of the polynomial lookup (degrees). */
+  private double hoodAngleOffsetDeg = -15;
 
   /**
    * Increments the hood-angle trim offset. Bind to POV right (+0.2°) and POV left (-0.2°) with
@@ -92,7 +53,7 @@ public class ShotControl {
 
   /**
    * Returns the commanded hood angle (degrees) for the given distance, including the operator trim
-   * offset.
+   * offset. The -15° mechanical offset is already baked into the hood's zero position.
    *
    * @param d distance to target in meters
    * @return hood angle in degrees
@@ -104,7 +65,7 @@ public class ShotControl {
             + 0.8376141604081012 * d * d
             + 5.998258704910444 * d
             + 78.62901114203709;
-    return 90 - angle - 15 + hoodAngleOffsetDeg;
+    return 90 - angle + hoodAngleOffsetDeg;
   }
 
   /**

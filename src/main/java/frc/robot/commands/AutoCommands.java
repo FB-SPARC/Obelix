@@ -6,8 +6,6 @@
 // at the root directory of this project.
 package frc.robot.commands;
 
-import static frc.robot.Constants.DriveAlignConstants.*;
-
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -15,10 +13,12 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.rack.Rack;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.Superstructure.State;
+import frc.robot.util.LoggedTunableNumber;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -32,6 +32,14 @@ public class AutoCommands {
 
   /** Default time to spin up, aim, and feed during auto shooting (seconds). */
   private static final double SHOOT_TIMEOUT_SECONDS = 4.0;
+
+  // ── AimAtPoint tunable gains ──────────────────────────────────────────────
+  private static final LoggedTunableNumber aimKP = new LoggedTunableNumber("AimAtPoint/kP", 5.0);
+  private static final LoggedTunableNumber aimKD = new LoggedTunableNumber("AimAtPoint/kD", 0.0);
+  private static final LoggedTunableNumber aimMaxVelocity =
+      new LoggedTunableNumber("AimAtPoint/MaxVelocityRadPerSec", 8.0);
+  private static final LoggedTunableNumber aimMaxAcceleration =
+      new LoggedTunableNumber("AimAtPoint/MaxAccelerationRadPerSec2", 20.0);
 
   private AutoCommands() {}
 
@@ -102,15 +110,27 @@ public class AutoCommands {
     // ProfiledPID: smooth motion with trapezoidal velocity profile
     ProfiledPIDController angleController =
         new ProfiledPIDController(
-            ANGLE_KP,
+            aimKP.get(),
             0.0, // No integral term
-            ANGLE_KD,
-            new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+            aimKD.get(),
+            new TrapezoidProfile.Constraints(aimMaxVelocity.get(), aimMaxAcceleration.get()));
     angleController.enableContinuousInput(-Math.PI, Math.PI); // Handle wraparound at ±π
     angleController.setTolerance(Math.toRadians(5)); // Within 5 degrees is "at target"
 
     return Commands.run(
             () -> {
+              // Update gains if changed in tuning mode
+              if (aimKP.hasChanged(angleController.hashCode())
+                  || aimKD.hasChanged(angleController.hashCode())
+                  || aimMaxVelocity.hasChanged(angleController.hashCode())
+                  || aimMaxAcceleration.hasChanged(angleController.hashCode())) {
+                angleController.setP(aimKP.get());
+                angleController.setD(aimKD.get());
+                angleController.setConstraints(
+                    new TrapezoidProfile.Constraints(
+                        aimMaxVelocity.get(), aimMaxAcceleration.get()));
+              }
+
               // Calculate target angle from robot position to field target
               Translation2d robotToTarget =
                   targetSupplier.get().minus(drive.getPose().getTranslation());
@@ -140,8 +160,14 @@ public class AutoCommands {
               }
             },
             drive)
-        // Reset PID controller when command starts (avoids integrator buildup from previous runs)
-        .beforeStarting(() -> angleController.reset(drive.getRotation().getRadians()))
+        // Reset PID controller when command starts, seeding both the current heading AND the
+        // current angular velocity from odometry. This prevents a large initial output spike
+        // when the robot arrives at a path endpoint with residual rotation velocity.
+        .beforeStarting(
+            () ->
+                angleController.reset(
+                    drive.getRotation().getRadians(),
+                    RobotState.getInstance().getRobotVelocity().omegaRadiansPerSecond))
         // Always X-lock wheels when done (safe brake position)
         .finallyDo(() -> drive.stopWithX());
   }

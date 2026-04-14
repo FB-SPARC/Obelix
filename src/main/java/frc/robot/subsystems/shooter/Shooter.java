@@ -15,6 +15,7 @@ import frc.robot.subsystems.shooter.ShooterIO.ShooterIOOutputs;
 import frc.robot.subsystems.shooter.ShooterIO.ShooterOutputMode;
 import frc.robot.util.FullSubsystem;
 import frc.robot.util.LoggedTracer;
+import frc.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -34,6 +35,20 @@ public class Shooter extends FullSubsystem {
   /** Drum circumference in meters, used for surface velocity conversions. */
   private static final double kDrumCircumferenceMeters =
       2.0 * Math.PI * ShooterConstants.kDrumRadius.in(Units.Meters);
+
+  // ── Tunable PID/FF gains ──────────────────────────────────────────────────
+  private static final LoggedTunableNumber kP =
+      new LoggedTunableNumber("Shooter/kP", ShooterConstants.kP);
+  private static final LoggedTunableNumber kI =
+      new LoggedTunableNumber("Shooter/kI", ShooterConstants.kI);
+  private static final LoggedTunableNumber kD =
+      new LoggedTunableNumber("Shooter/kD", ShooterConstants.kD);
+  private static final LoggedTunableNumber kS =
+      new LoggedTunableNumber("Shooter/kS", ShooterConstants.kS);
+  private static final LoggedTunableNumber kV =
+      new LoggedTunableNumber("Shooter/kV", ShooterConstants.kV);
+  private static final LoggedTunableNumber kA =
+      new LoggedTunableNumber("Shooter/kA", ShooterConstants.kA);
 
   private final Alert leaderDisconnectedAlert =
       new Alert("Shooter leader motor disconnected!", AlertType.kError);
@@ -69,6 +84,15 @@ public class Shooter extends FullSubsystem {
 
     if (DriverStation.isDisabled()) {
       outputs.mode = ShooterOutputMode.BRAKE;
+    }
+
+    if (kP.hasChanged(hashCode())
+        || kI.hasChanged(hashCode())
+        || kD.hasChanged(hashCode())
+        || kS.hasChanged(hashCode())
+        || kV.hasChanged(hashCode())
+        || kA.hasChanged(hashCode())) {
+      io.setPID(kP.get(), kI.get(), kD.get(), kS.get(), kV.get(), kA.get());
     }
 
     LoggedTracer.record("Shooter");
