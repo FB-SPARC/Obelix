@@ -53,7 +53,7 @@ public class HoodIOTalonFX implements HoodIO {
   private final Debouncer motorConnectedDebouncer = new Debouncer(0.5);
   private final Debouncer encoderConnectedDebouncer = new Debouncer(0.5);
 
-  // Setpoint tracking
+  // Setpoint tracking (kept for isAtSetpoint reference in updateInputs)
   private double setpointDegrees = 0.0;
 
   public HoodIOTalonFX() {
@@ -135,12 +135,13 @@ public class HoodIOTalonFX implements HoodIO {
     StatusCode encoderStatus = BaseStatusSignal.refreshAll(encoderAbsolutePosition);
 
     inputs.motorConnected = motorConnectedDebouncer.calculate(motorStatus.isOK());
-    inputs.motorPositionDegrees = getMotorPositionDegrees();
+    inputs.motorPositionDegrees = Units.rotationsToDegrees(motorPosition.getValueAsDouble());
     inputs.motorVelocityDegreesPerSecond =
         Units.rotationsToDegrees(motorVelocity.getValueAsDouble());
     inputs.motorVoltage = motorAppliedVolts.getValueAsDouble();
     inputs.motorCurrent = motorCurrent.getValueAsDouble();
-    inputs.mechanismPositionDegrees = getHoodPositionDegrees();
+    // With FusedCANcoder, motor.getPosition() reports mechanism rotations directly
+    inputs.mechanismPositionDegrees = Units.rotationsToDegrees(motorPosition.getValueAsDouble());
 
     inputs.encoderConnected = encoderConnectedDebouncer.calculate(encoderStatus.isOK());
     inputs.absoluteEncoderPositionDegrees =
@@ -148,72 +149,19 @@ public class HoodIOTalonFX implements HoodIO {
   }
 
   @Override
-  public void setVoltage(double voltage) {
-    motor.setControl(voltageRequest.withOutput(voltage));
-  }
-
-  @Override
-  public double getMotorPositionDegrees() {
-    return Units.rotationsToDegrees(motorPosition.getValueAsDouble());
-  }
-
-  @Override
-  public double getHoodPositionDegrees() {
-    // With FusedCANcoder, motor.getPosition() reports mechanism rotations directly
-    return Units.rotationsToDegrees(motorPosition.getValueAsDouble());
-  }
-
-  @Override
-  public double getVelocity() {
-    // With FusedCANcoder, motor.getVelocity() reports mechanism rot/s directly
-    return Units.rotationsToDegrees(motorVelocity.getValueAsDouble());
-  }
-
-  @Override
-  public double getCurrent() {
-    return motorCurrent.getValueAsDouble();
-  }
-
-  @Override
-  public double getVoltage() {
-    return motorAppliedVolts.getValueAsDouble();
-  }
-
-  @Override
-  public void setHoodPositionDegrees(double degrees) {
-    this.setpointDegrees = degrees;
-
-    // With FusedCANcoder, position target is in mechanism rotations
-    double mechanismRotations = Units.degreesToRotations(degrees);
-
-    motor.setControl(motionMagicRequest.withPosition(mechanismRotations));
-  }
-
-  @Override
-  public boolean isAtSetpoint() {
-    return Math.abs(setpointDegrees - getHoodPositionDegrees()) <= HoodConstants.kTolerance;
-  }
-
-  @Override
-  public void resetEncoder() {
-    // No-op: FusedCANcoder derives position from the absolute CANcoder.
-    // Zeroing the motor position would be immediately overridden.
-  }
-
-  @Override
-  public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
-    Slot0Configs slot0 = new Slot0Configs();
-    slot0.kP = kP;
-    slot0.kI = kI;
-    slot0.kD = kD;
-    slot0.kS = kS;
-    slot0.kV = kV;
-    slot0.kA = kA;
-    motor.getConfigurator().apply(slot0);
-  }
-
-  @Override
-  public void setBrakeMode(boolean brake) {
-    motor.setNeutralMode(brake ? NeutralModeValue.Brake : NeutralModeValue.Coast);
+  public void applyOutputs(HoodIOOutputs outputs) {
+    if (Constants.tuningMode) {
+      motor.setNeutralMode(outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast);
+    }
+    switch (outputs.mode) {
+      case BRAKE -> motor.setControl(voltageRequest.withOutput(0.0));
+      case VOLTAGE -> motor.setControl(voltageRequest.withOutput(outputs.volts));
+      case POSITION -> {
+        this.setpointDegrees = outputs.positionDegrees;
+        motor.setControl(
+            motionMagicRequest.withPosition(
+                edu.wpi.first.math.util.Units.degreesToRotations(outputs.positionDegrees)));
+      }
+    }
   }
 }

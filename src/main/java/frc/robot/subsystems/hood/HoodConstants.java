@@ -1,5 +1,7 @@
 package frc.robot.subsystems.hood;
 
+import frc.robot.util.energy.CurrentLimits;
+
 public final class HoodConstants {
   public static final int MOTOR_ID = 60;
   public static final int CANCODER_ID = 40;
@@ -8,7 +10,7 @@ public final class HoodConstants {
   public static final double kSensorToMechanismRatio =
       17.6; // CANCoder rotations to hood output rotations
 
-  public static final double MAX_CURRENT = 100.0; // Amps
+  public static final double MAX_CURRENT = CurrentLimits.kHood;
 
   public static final double MAX_ANGLE_DEGREES = 22.5;
   public static final double MIN_ANGLE_DEGREES = 0;

@@ -1,10 +1,12 @@
 package frc.robot.subsystems.feeder;
 
+import frc.robot.util.energy.CurrentLimits;
+
 public final class FeederConstants {
   public static final int LEADER_MOTOR_ID = 16;
   public static final int FOLLOWER_MOTOR_ID = 18;
 
-  public static final double MAX_CURRENT = 100.0; // Amps
+  public static final double MAX_CURRENT = CurrentLimits.kFeeder;
 
   public static final double kTolerance = 100; // RPM
 

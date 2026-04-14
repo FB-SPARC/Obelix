@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Meters;
 
 import edu.wpi.first.units.measure.Distance;
+import frc.robot.util.energy.CurrentLimits;
 
 public final class ShooterConstants {
   public static final int LEADER_MOTOR_ID = 50; // Left up
@@ -12,7 +13,7 @@ public final class ShooterConstants {
 
   public static final Distance kDrumRadius = Meters.of(0.0508);
 
-  public static final double MAX_CURRENT = 100.0; // Amps
+  public static final double MAX_CURRENT = CurrentLimits.kShooter;
 
   public static final double kTolerance = 25; // RPM
 

@@ -1,13 +1,31 @@
 package frc.robot.subsystems.bed;
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
+import frc.robot.Robot;
+import frc.robot.subsystems.bed.BedIO.BedIOOutputs;
+import frc.robot.subsystems.bed.BedIO.BedOutputMode;
+import frc.robot.util.FullSubsystem;
+import frc.robot.util.LoggedTracer;
 import org.littletonrobotics.junction.Logger;
 
-/** Bed subsystem that controls a bed of rollers for transporting game pieces. */
-public class Bed extends SubsystemBase {
+/**
+ * Bed subsystem that controls a bed of rollers for transporting game pieces.
+ *
+ * <p>Follows the FullSubsystem pattern: goals are stored in {@link #outputs} during commands and
+ * applied atomically to the IO layer in {@link #periodicAfterScheduler()}.
+ */
+public class Bed extends FullSubsystem {
 
   private final BedIO io;
   private final BedIOInputsAutoLogged inputs = new BedIOInputsAutoLogged();
+  private final BedIOOutputs outputs = new BedIOOutputs();
+
+  private final Alert leaderDisconnectedAlert =
+      new Alert("Bed leader motor disconnected!", AlertType.kError);
+  private final Alert followerDisconnectedAlert =
+      new Alert("Bed follower motor disconnected!", AlertType.kError);
 
   /** Creates a new Bed. */
   public Bed(BedIO io) {
@@ -18,6 +36,26 @@ public class Bed extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("Bed", inputs);
+
+    leaderDisconnectedAlert.set(Robot.showHardwareAlerts() && !inputs.leaderMotorConnected);
+    followerDisconnectedAlert.set(Robot.showHardwareAlerts() && !inputs.followerMotorConnected);
+
+    Robot.batteryLogger.reportCurrentUsage(
+        "Bed", false, inputs.leaderMotorCurrent + inputs.followerMotorCurrent);
+
+    if (DriverStation.isDisabled()) {
+      outputs.mode = BedOutputMode.BRAKE;
+    }
+
+    LoggedTracer.record("Bed");
+  }
+
+  @Override
+  public void periodicAfterScheduler() {
+    Logger.recordOutput("Bed/OutputMode", outputs.mode.toString());
+    Logger.recordOutput("Bed/GoalRPM", outputs.velocityRPM);
+    Logger.recordOutput("Bed/AtSetpoint", isAtSetpoint());
+    io.applyOutputs(outputs);
   }
 
   // --- RPM API ---
@@ -28,7 +66,8 @@ public class Bed extends SubsystemBase {
    * @param rpm the target roller RPM.
    */
   public void setBedRPM(double rpm) {
-    io.setBedRPM(rpm);
+    outputs.mode = BedOutputMode.VELOCITY;
+    outputs.velocityRPM = rpm;
   }
 
   /**
@@ -46,7 +85,7 @@ public class Bed extends SubsystemBase {
    * @return true if the bed RPM is within tolerance.
    */
   public boolean isAtSetpoint() {
-    return io.isAtSetpoint();
+    return Math.abs(inputs.leaderMotorVelocityRPM - outputs.velocityRPM) <= BedConstants.kTolerance;
   }
 
   // --- Voltage API ---
@@ -57,30 +96,17 @@ public class Bed extends SubsystemBase {
    * @param voltage voltage from -12 to 12.
    */
   public void setVoltage(double voltage) {
-    io.setVoltage(voltage);
+    outputs.mode = BedOutputMode.VOLTAGE;
+    outputs.volts = voltage;
   }
 
-  /** Stops the bed motors. */
+  /** Stops the bed motors (brake). */
   public void stop() {
-    io.setVoltage(0.0);
-  }
-
-  /**
-   * Updates the PID and feedforward gains on the motor controller at runtime.
-   *
-   * @param kP proportional gain
-   * @param kI integral gain
-   * @param kD derivative gain
-   * @param kS static feedforward
-   * @param kV velocity feedforward
-   * @param kA acceleration feedforward
-   */
-  public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
-    io.setPID(kP, kI, kD, kS, kV, kA);
+    outputs.mode = BedOutputMode.BRAKE;
   }
 
   /** Set brake mode (true) or coast mode (false). */
   public void setBrakeMode(boolean brake) {
-    io.setBrakeMode(brake);
+    outputs.brakeMode = brake;
   }
 }

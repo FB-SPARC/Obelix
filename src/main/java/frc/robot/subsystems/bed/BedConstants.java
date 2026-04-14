@@ -1,10 +1,12 @@
 package frc.robot.subsystems.bed;
 
+import frc.robot.util.energy.CurrentLimits;
+
 public final class BedConstants {
   public static final int LEADER_MOTOR_ID = 19;
   public static final int FOLLOWER_MOTOR_ID = 20;
 
-  public static final double MAX_CURRENT = 100.0; // Amps
+  public static final double MAX_CURRENT = CurrentLimits.kBed;
 
   public static final double kTolerance = 50; // RPM
 

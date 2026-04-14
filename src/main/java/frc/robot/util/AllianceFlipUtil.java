@@ -1,14 +1,22 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
 
 package frc.robot.util;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.DriverStation;
+import frc.robot.Constants;
 import frc.robot.FieldConstants;
+import frc.robot.util.geometry.Bounds;
 
 public class AllianceFlipUtil {
 
@@ -34,8 +42,34 @@ public class AllianceFlipUtil {
         : pose;
   }
 
+  public static Translation3d apply(Translation3d translation) {
+    return new Translation3d(
+        applyX(translation.getX()), applyY(translation.getY()), translation.getZ());
+  }
+
+  public static Rotation3d apply(Rotation3d rotation) {
+    return shouldFlip() ? rotation.rotateBy(new Rotation3d(0.0, 0.0, Math.PI)) : rotation;
+  }
+
+  public static Pose3d apply(Pose3d pose) {
+    return new Pose3d(apply(pose.getTranslation()), apply(pose.getRotation()));
+  }
+
+  public static Bounds apply(Bounds bounds) {
+    if (shouldFlip()) {
+      return new Bounds(
+          applyX(bounds.maxX()),
+          applyX(bounds.minX()),
+          applyY(bounds.maxY()),
+          applyY(bounds.minY()));
+    } else {
+      return bounds;
+    }
+  }
+
   public static boolean shouldFlip() {
-    return (DriverStation.getAlliance().isPresent()
-        && DriverStation.getAlliance().get() == DriverStation.Alliance.Red);
+    return !Constants.disableHAL
+        && DriverStation.getAlliance().isPresent()
+        && DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
   }
 }

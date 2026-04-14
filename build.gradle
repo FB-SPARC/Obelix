@@ -49,7 +49,7 @@ deploy {
                     directory = '/home/lvuser/deploy'
                     // Change to true to delete files on roboRIO that no
                     // longer exist in deploy directory on roboRIO
-                    deleteOldFiles = false
+                    deleteOldFiles = true
                 }
             }
         }
@@ -143,6 +143,19 @@ gversion {
     indent       = "  "
 }
 
+// Check robot type when deploying
+task(checkConstantsDeploy, dependsOn: "classes", type: JavaExec) {
+    main = "frc.robot.Constants\$CheckDeploy"
+    classpath = sourceSets.main.runtimeClasspath
+}
+deployroborio.dependsOn(checkConstantsDeploy)
+
+// Check constants for pull request
+task(checkConstantsPullRequest, dependsOn: "classes", type: JavaExec) {
+    main = "frc.robot.Constants\$CheckPullRequest"
+    classpath = sourceSets.main.runtimeClasspath
+}
+
 // Create commit with working changes on event branches
 task(eventDeploy) {
     doLast {
@@ -189,6 +202,13 @@ spotless {
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()
+        licenseHeader '''// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
+'''
     }
     groovyGradle {
         target fileTree(".") {

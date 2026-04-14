@@ -1,12 +1,14 @@
 package frc.robot.subsystems.rack;
 
+import frc.robot.util.energy.CurrentLimits;
+
 public final class RackConstants {
   public static final int MOTOR_ID = 15;
 
   public static final double kGearRatio = 169.0 / 48.0;
   public static final double kPinionRadiusMeters = 0.02032;
 
-  public static final double MAX_CURRENT = 100.0; // Amps
+  public static final double MAX_CURRENT = CurrentLimits.kRack;
 
   public static final double MAX_POSITION_METERS = 0.285;
   public static final double MIN_POSITION_METERS = 0.0;

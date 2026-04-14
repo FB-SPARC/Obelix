@@ -16,6 +16,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import frc.robot.Robot;
 import org.littletonrobotics.junction.Logger;
 
 public class Module {
@@ -65,10 +66,10 @@ public class Module {
       odometryPositions[i] = new SwerveModulePosition(positionMeters, angle);
     }
 
-    // Update alerts
-    driveDisconnectedAlert.set(!inputs.driveConnected);
-    turnDisconnectedAlert.set(!inputs.turnConnected);
-    turnEncoderDisconnectedAlert.set(!inputs.turnEncoderConnected);
+    // Update alerts (gated on showHardwareAlerts() to suppress false positives during boot)
+    driveDisconnectedAlert.set(Robot.showHardwareAlerts() && !inputs.driveConnected);
+    turnDisconnectedAlert.set(Robot.showHardwareAlerts() && !inputs.turnConnected);
+    turnEncoderDisconnectedAlert.set(Robot.showHardwareAlerts() && !inputs.turnEncoderConnected);
   }
 
   /** Runs the module with the specified setpoint state. Mutates the state to optimize it. */
@@ -132,6 +133,17 @@ public class Module {
   /** Returns the module position in radians. */
   public double getWheelRadiusCharacterizationPosition() {
     return inputs.drivePositionRad;
+  }
+
+  /**
+   * Returns the total stator current draw of this module in amps (drive motor + turn motor).
+   *
+   * <p>Stator current reflects motor torque output and is what the stator current limit is applied
+   * to. It is higher than supply current under normal operation and is the appropriate value to use
+   * for energy/thermal budgeting.
+   */
+  public double getTotalCurrentAmps() {
+    return inputs.driveCurrentAmps + inputs.turnCurrentAmps;
   }
 
   /** Returns the module velocity in rotations/sec (Phoenix native units). */

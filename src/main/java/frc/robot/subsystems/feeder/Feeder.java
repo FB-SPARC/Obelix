@@ -1,13 +1,31 @@
 package frc.robot.subsystems.feeder;
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
+import frc.robot.Robot;
+import frc.robot.subsystems.feeder.FeederIO.FeederIOOutputs;
+import frc.robot.subsystems.feeder.FeederIO.FeederOutputMode;
+import frc.robot.util.FullSubsystem;
+import frc.robot.util.LoggedTracer;
 import org.littletonrobotics.junction.Logger;
 
-/** Feeder subsystem that controls roller motors for transporting game pieces to the shooter. */
-public class Feeder extends SubsystemBase {
+/**
+ * Feeder subsystem that controls roller motors for transporting game pieces to the shooter.
+ *
+ * <p>Follows the FullSubsystem pattern: goals are stored in {@link #outputs} during commands and
+ * applied atomically to the IO layer in {@link #periodicAfterScheduler()}.
+ */
+public class Feeder extends FullSubsystem {
 
   private final FeederIO io;
   private final FeederIOInputsAutoLogged inputs = new FeederIOInputsAutoLogged();
+  private final FeederIOOutputs outputs = new FeederIOOutputs();
+
+  private final Alert leaderDisconnectedAlert =
+      new Alert("Feeder leader motor disconnected!", AlertType.kError);
+  private final Alert followerDisconnectedAlert =
+      new Alert("Feeder follower motor disconnected!", AlertType.kError);
 
   /** Creates a new Feeder. */
   public Feeder(FeederIO io) {
@@ -18,6 +36,26 @@ public class Feeder extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("Feeder", inputs);
+
+    leaderDisconnectedAlert.set(Robot.showHardwareAlerts() && !inputs.leaderMotorConnected);
+    followerDisconnectedAlert.set(Robot.showHardwareAlerts() && !inputs.followerMotorConnected);
+
+    Robot.batteryLogger.reportCurrentUsage(
+        "Feeder", false, inputs.leaderMotorCurrent + inputs.followerMotorCurrent);
+
+    if (DriverStation.isDisabled()) {
+      outputs.mode = FeederOutputMode.BRAKE;
+    }
+
+    LoggedTracer.record("Feeder");
+  }
+
+  @Override
+  public void periodicAfterScheduler() {
+    Logger.recordOutput("Feeder/OutputMode", outputs.mode.toString());
+    Logger.recordOutput("Feeder/GoalRPM", outputs.velocityRPM);
+    Logger.recordOutput("Feeder/AtSetpoint", isAtSetpoint());
+    io.applyOutputs(outputs);
   }
 
   // --- RPM API ---
@@ -28,7 +66,8 @@ public class Feeder extends SubsystemBase {
    * @param rpm the target roller RPM.
    */
   public void setFeederRPM(double rpm) {
-    io.setFeederRPM(rpm);
+    outputs.mode = FeederOutputMode.VELOCITY;
+    outputs.velocityRPM = rpm;
   }
 
   /**
@@ -46,7 +85,8 @@ public class Feeder extends SubsystemBase {
    * @return true if the feeder RPM is within tolerance.
    */
   public boolean isAtSetpoint() {
-    return io.isAtSetpoint();
+    return Math.abs(inputs.leaderMotorVelocityRPM - outputs.velocityRPM)
+        <= FeederConstants.kTolerance;
   }
 
   // --- Voltage API ---
@@ -57,30 +97,17 @@ public class Feeder extends SubsystemBase {
    * @param voltage voltage from -12 to 12.
    */
   public void setVoltage(double voltage) {
-    io.setVoltage(voltage);
+    outputs.mode = FeederOutputMode.VOLTAGE;
+    outputs.volts = voltage;
   }
 
-  /** Stops the feeder motors. */
+  /** Stops the feeder motors (brake). */
   public void stop() {
-    io.setVoltage(0.0);
-  }
-
-  /**
-   * Updates the PID and feedforward gains on the motor controller at runtime.
-   *
-   * @param kP proportional gain
-   * @param kI integral gain
-   * @param kD derivative gain
-   * @param kS static feedforward
-   * @param kV velocity feedforward
-   * @param kA acceleration feedforward
-   */
-  public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
-    io.setPID(kP, kI, kD, kS, kV, kA);
+    outputs.mode = FeederOutputMode.BRAKE;
   }
 
   /** Set brake mode (true) or coast mode (false). */
   public void setBrakeMode(boolean brake) {
-    io.setBrakeMode(brake);
+    outputs.brakeMode = brake;
   }
 }

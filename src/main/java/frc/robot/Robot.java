@@ -7,9 +7,29 @@
 
 package frc.robot;
 
+import edu.wpi.first.hal.AllianceStationID;
+import edu.wpi.first.math.MathShared;
+import edu.wpi.first.math.MathSharedStore;
+import edu.wpi.first.math.MathUsageId;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.IterativeRobotBase;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.Watchdog;
+import edu.wpi.first.wpilibj.simulation.DriverStationSim;
+import edu.wpi.first.wpilibj.simulation.RoboRioSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.util.FullSubsystem;
 import frc.robot.util.HubShiftUtil;
+import frc.robot.util.LoggedTracer;
+import frc.robot.util.VirtualSubsystem;
+import frc.robot.util.energy.BatteryLogger;
+import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -17,15 +37,14 @@ import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
-/**
- * The VM is configured to automatically run this class, and to call the functions corresponding to
- * each mode, as described in the TimedRobot documentation. If you change the name of this class or
- * the package after creating this project, you must also update the build.gradle file in the
- * project.
- */
 public class Robot extends LoggedRobot {
   private Command autonomousCommand;
+  private double autoStart;
+  private boolean autoMessagePrinted;
   private RobotContainer robotContainer;
+
+  private static final Timer disabledTimer = new Timer();
+  public static final BatteryLogger batteryLogger = new BatteryLogger();
 
   public Robot() {
     // Record metadata
@@ -41,6 +60,13 @@ public class Robot extends LoggedRobot {
           case 1 -> "Uncommitted changes";
           default -> "Unknown";
         });
+    try {
+      Logger.recordMetadata("Hostname", InetAddress.getLocalHost().getHostName());
+    } catch (UnknownHostException e) {
+      Logger.recordMetadata("Hostname", "Unknown");
+    }
+    Logger.recordMetadata(
+        "Platform", System.getProperty("os.name") + " " + System.getProperty("os.arch"));
 
     // Set up data receivers & replay source
     switch (Constants.currentMode) {
@@ -67,34 +93,128 @@ public class Robot extends LoggedRobot {
     // Start AdvantageKit logger
     Logger.start();
 
-    // Instantiate our RobotContainer. This will perform all our button bindings,
-    // and put our autonomous chooser on the dashboard.
+    // Adjust loop overrun warning timeout so spurious DS warnings don't fire
+    // on heavy init frames while still catching genuinely broken loops
+    try {
+      Field watchdogField = IterativeRobotBase.class.getDeclaredField("m_watchdog");
+      watchdogField.setAccessible(true);
+      Watchdog watchdog = (Watchdog) watchdogField.get(this);
+      watchdog.setTimeout(Constants.loopPeriodWatchdogSecs);
+    } catch (Exception e) {
+      DriverStation.reportWarning("Failed to set watchdog timeout.", false);
+    }
+    CommandScheduler.getInstance().setPeriod(Constants.loopPeriodWatchdogSecs);
+
+    // Silence joystick connection warnings in DS
+    DriverStation.silenceJoystickConnectionWarning(true);
+
+    // Silence "x and y components of Rotation2d are zero" spam
+    var mathShared = MathSharedStore.getMathShared();
+    MathSharedStore.setMathShared(
+        new MathShared() {
+          @Override
+          public void reportError(String error, StackTraceElement[] stackTrace) {
+            if (error.startsWith("x and y components of Rotation2d are zero")) {
+              return;
+            }
+            mathShared.reportError(error, stackTrace);
+          }
+
+          @Override
+          public void reportUsage(MathUsageId id, int count) {
+            mathShared.reportUsage(id, count);
+          }
+
+          @Override
+          public double getTimestamp() {
+            return mathShared.getTimestamp();
+          }
+        });
+
+    // Configure sim alliance station and team number
+    if (Constants.currentMode == Constants.Mode.SIM) {
+      RoboRioSim.setTeamNumber(5665);
+      DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
+      DriverStationSim.notifyNewData();
+    }
+
+    // Reset disabled timer
+    disabledTimer.restart();
+
+    // Log active commands for replay debugging
+    Map<String, Integer> commandCounts = new HashMap<>();
+    BiConsumer<Command, Boolean> logCommandFunction =
+        (Command command, Boolean active) -> {
+          String name = command.getName();
+          int count = commandCounts.getOrDefault(name, 0) + (active ? 1 : -1);
+          commandCounts.put(name, count);
+          Logger.recordOutput(
+              "CommandsUnique/" + name + "_" + Integer.toHexString(command.hashCode()), active);
+          Logger.recordOutput("CommandsAll/" + name, count > 0);
+        };
+    CommandScheduler.getInstance()
+        .onCommandInitialize(command -> logCommandFunction.accept(command, true));
+    CommandScheduler.getInstance()
+        .onCommandFinish(command -> logCommandFunction.accept(command, false));
+    CommandScheduler.getInstance()
+        .onCommandInterrupt(command -> logCommandFunction.accept(command, false));
+
+    // Instantiate our RobotContainer
     robotContainer = new RobotContainer();
+  }
+
+  /** Returns whether to display hardware fault alerts (suppressed for 30s after boot). */
+  public static boolean showHardwareAlerts() {
+    return Constants.currentMode != Constants.Mode.SIM && Timer.getTimestamp() > 30.0;
+  }
+
+  /** Returns whether performance should be throttled while disabled (after 5s idle). */
+  public static boolean shouldThrottle() {
+    return disabledTimer.hasElapsed(5.0);
   }
 
   /** This function is called periodically during all modes. */
   @Override
   public void robotPeriodic() {
-    // Optionally switch the thread to high priority to improve loop
-    // timing (see the template project documentation for details)
-    // Threads.setCurrentThreadPriority(true, 99);
+    // Reset tracer at the start of each loop cycle
+    LoggedTracer.reset();
 
-    // Runs the Scheduler. This is responsible for polling buttons, adding
-    // newly-scheduled commands, running already-scheduled commands, removing
-    // finished or interrupted commands, and running subsystem periodic() methods.
-    // This must be called from the robot's periodic block in order for anything in
-    // the Command-based framework to work.
+    // Update battery voltage for energy logging
+    batteryLogger.setBatteryVoltage(edu.wpi.first.wpilibj.RobotController.getBatteryVoltage());
+    batteryLogger.setRioCurrent(edu.wpi.first.wpilibj.RobotController.getInputCurrent());
+
+    VirtualSubsystem.runAllPeriodic();
     CommandScheduler.getInstance().run();
+    robotContainer.periodic();
+    VirtualSubsystem.runAllPeriodicAfterScheduler();
+    FullSubsystem.runAllPeriodicAfterScheduler();
+    batteryLogger.periodicAfterScheduler();
+    LoggedTracer.record("Robot/Scheduler");
+
+    // Reset disabled timer while enabled
+    if (DriverStation.isEnabled()) {
+      disabledTimer.restart();
+    }
 
     HubShiftUtil.ShiftInfo info = HubShiftUtil.getOfficialShiftInfo();
-
     Logger.recordOutput("Shift/Current", info.currentShift().toString());
     Logger.recordOutput("Shift/RemainingTime", info.remainingTime());
     Logger.recordOutput("Shift/ElapsedTime", info.elapsedTime());
     Logger.recordOutput("Shift/Active", info.active());
 
-    // Return to non-RT thread priority (do not modify the first argument)
-    // Threads.setCurrentThreadPriority(false, 10);
+    // Print auto duration once the autonomous command finishes
+    if (autonomousCommand != null) {
+      if (!autonomousCommand.isScheduled() && !autoMessagePrinted) {
+        if (DriverStation.isAutonomousEnabled()) {
+          System.out.printf(
+              "*** Auto finished in %.2f secs ***%n", Timer.getTimestamp() - autoStart);
+        } else {
+          System.out.printf(
+              "*** Auto cancelled in %.2f secs ***%n", Timer.getTimestamp() - autoStart);
+        }
+        autoMessagePrinted = true;
+      }
+    }
   }
 
   /** This function is called once when the robot is disabled. */
@@ -108,10 +228,11 @@ public class Robot extends LoggedRobot {
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
   @Override
   public void autonomousInit() {
+    autoStart = Timer.getTimestamp();
+    autoMessagePrinted = false;
     HubShiftUtil.initialize();
     autonomousCommand = robotContainer.getAutonomousCommand();
 
-    // schedule the autonomous command (example)
     if (autonomousCommand != null) {
       CommandScheduler.getInstance().schedule(autonomousCommand);
     }
@@ -125,15 +246,9 @@ public class Robot extends LoggedRobot {
   @Override
   public void teleopInit() {
     HubShiftUtil.initialize();
-    // This makes sure that the autonomous stops running when
-    // teleop starts running. If you want the autonomous to
-    // continue until interrupted by another command, remove
-    // this line or comment it out.
     if (autonomousCommand != null) {
       autonomousCommand.cancel();
     }
-
-    // robotContainer.teleopInit();
   }
 
   /** This function is called periodically during operator control. */
@@ -143,7 +258,6 @@ public class Robot extends LoggedRobot {
   /** This function is called once when test mode is enabled. */
   @Override
   public void testInit() {
-    // Cancels all running commands at the start of test mode.
     CommandScheduler.getInstance().cancelAll();
   }
 

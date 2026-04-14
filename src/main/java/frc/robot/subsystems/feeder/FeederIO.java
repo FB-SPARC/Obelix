@@ -14,44 +14,22 @@ public interface FeederIO {
     public double followerMotorCurrent = 0.0;
     public double followerMotorVoltage = 0.0;
     public double followerMotorVelocityRPM = 0.0;
+  }
 
-    public double feederSetpointRPM = 0.0;
+  public static enum FeederOutputMode {
+    VOLTAGE,
+    VELOCITY,
+    BRAKE
+  }
+
+  public static class FeederIOOutputs {
+    public FeederOutputMode mode = FeederOutputMode.BRAKE;
+    public double velocityRPM = 0.0;
+    public double volts = 0.0;
+    public boolean brakeMode = false;
   }
 
   public default void updateInputs(FeederIOInputs inputs) {}
 
-  // Sets motor voltage from -12V to 12V
-  public default void setVoltage(double voltage) {}
-
-  public default double getFeederRPM() {
-    return 0.0;
-  }
-
-  // Returns velocity of the leader motor in degrees per second
-  public default double getVelocity() {
-    return 0.0;
-  }
-
-  // Returns current of the leader motor in amps
-  public default double getCurrent() {
-    return 0.0;
-  }
-
-  // Returns voltage of the leader motor in volts
-  public default double getVoltage() {
-    return 0.0;
-  }
-
-  public default boolean isAtSetpoint() {
-    return false;
-  }
-
-  public default void setFeederRPM(double rpm) {}
-
-  public default void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {}
-
-  public default void resetEncoder() {}
-
-  /** Set brake mode (true) or coast mode (false). */
-  public default void setBrakeMode(boolean brake) {}
+  public default void applyOutputs(FeederIOOutputs outputs) {}
 }

@@ -113,52 +113,15 @@ public class IntakeIOTalonFX implements IntakeIO {
   }
 
   @Override
-  public void setVoltage(double voltage) {
-    leaderMotor.setControl(voltageRequest.withOutput(voltage));
-  }
-
-  @Override
-  public double getIntakeRPM() {
-    return leaderVelocity.getValueAsDouble() * 60.0;
-  }
-
-  @Override
-  public double getVelocity() {
-    return leaderVelocity.getValueAsDouble() * 360.0;
-  }
-
-  @Override
-  public double getCurrent() {
-    return leaderCurrent.getValueAsDouble();
-  }
-
-  @Override
-  public double getVoltage() {
-    return leaderAppliedVolts.getValueAsDouble();
-  }
-
-  @Override
-  public boolean isAtSetpoint() {
-    return false; // Intake is typically open-loop
-  }
-
-  @Override
-  public void setIntakeRPM(double rpm) {
-    // Open-loop approximation: convert RPM to rough voltage
-    // For proper closed-loop, add VelocityVoltage like Bed/Feeder
-    double voltage = (rpm / 6380.0) * 12.0; // Falcon 500 free speed ~6380 RPM
-    leaderMotor.setControl(voltageRequest.withOutput(voltage));
-  }
-
-  @Override
-  public void resetEncoder() {
-    tryUntilOk(5, () -> leaderMotor.setPosition(0.0, 0.25));
-  }
-
-  @Override
-  public void setBrakeMode(boolean brake) {
-    var mode = brake ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-    leaderMotor.setNeutralMode(mode);
-    followerMotor.setNeutralMode(mode);
+  public void applyOutputs(IntakeIOOutputs outputs) {
+    if (Constants.tuningMode) {
+      var neutralMode = outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+      leaderMotor.setNeutralMode(neutralMode);
+      followerMotor.setNeutralMode(neutralMode);
+    }
+    switch (outputs.mode) {
+      case BRAKE -> leaderMotor.setControl(voltageRequest.withOutput(0.0));
+      case VOLTAGE -> leaderMotor.setControl(voltageRequest.withOutput(outputs.volts));
+    }
   }
 }

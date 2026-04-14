@@ -48,9 +48,6 @@ public class FeederIOTalonFX implements FeederIO {
   private final Debouncer leaderConnectedDebouncer = new Debouncer(0.5);
   private final Debouncer followerConnectedDebouncer = new Debouncer(0.5);
 
-  // Setpoint tracking
-  private double setpointRPM = 0.0;
-
   public FeederIOTalonFX() {
     leaderMotor = new TalonFX(FeederConstants.LEADER_MOTOR_ID, Constants.canivore);
     followerMotor = new TalonFX(FeederConstants.FOLLOWER_MOTOR_ID, Constants.canivore);
@@ -127,68 +124,20 @@ public class FeederIOTalonFX implements FeederIO {
     inputs.followerMotorVelocityRPM = followerVelocity.getValueAsDouble() * 60.0;
     inputs.followerMotorVoltage = followerAppliedVolts.getValueAsDouble();
     inputs.followerMotorCurrent = followerCurrent.getValueAsDouble();
-
-    inputs.feederSetpointRPM = setpointRPM;
   }
 
   @Override
-  public void setVoltage(double voltage) {
-    leaderMotor.setControl(voltageRequest.withOutput(voltage));
-  }
-
-  @Override
-  public double getFeederRPM() {
-    return leaderVelocity.getValueAsDouble() * 60.0;
-  }
-
-  @Override
-  public void setFeederRPM(double rpm) {
-    this.setpointRPM = rpm;
-    double rotationsPerSecond = rpm / 60.0;
-    leaderMotor.setControl(velocityRequest.withVelocity(rotationsPerSecond));
-  }
-
-  @Override
-  public double getVelocity() {
-    return leaderVelocity.getValueAsDouble() * 360.0;
-  }
-
-  @Override
-  public double getCurrent() {
-    return leaderCurrent.getValueAsDouble();
-  }
-
-  @Override
-  public double getVoltage() {
-    return leaderAppliedVolts.getValueAsDouble();
-  }
-
-  @Override
-  public boolean isAtSetpoint() {
-    return Math.abs(setpointRPM - getFeederRPM()) <= FeederConstants.kTolerance;
-  }
-
-  @Override
-  public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
-    Slot0Configs slot0 = new Slot0Configs();
-    slot0.kP = kP;
-    slot0.kI = kI;
-    slot0.kD = kD;
-    slot0.kS = kS;
-    slot0.kV = kV;
-    slot0.kA = kA;
-    leaderMotor.getConfigurator().apply(slot0);
-  }
-
-  @Override
-  public void resetEncoder() {
-    tryUntilOk(5, () -> leaderMotor.setPosition(0.0, 0.25));
-  }
-
-  @Override
-  public void setBrakeMode(boolean brake) {
-    var mode = brake ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-    leaderMotor.setNeutralMode(mode);
-    followerMotor.setNeutralMode(mode);
+  public void applyOutputs(FeederIOOutputs outputs) {
+    if (Constants.tuningMode) {
+      var neutralMode = outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+      leaderMotor.setNeutralMode(neutralMode);
+      followerMotor.setNeutralMode(neutralMode);
+    }
+    switch (outputs.mode) {
+      case BRAKE -> leaderMotor.setControl(voltageRequest.withOutput(0.0));
+      case VOLTAGE -> leaderMotor.setControl(voltageRequest.withOutput(outputs.volts));
+      case VELOCITY -> leaderMotor.setControl(
+          velocityRequest.withVelocity(outputs.velocityRPM / 60.0));
+    }
   }
 }

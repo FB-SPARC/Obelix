@@ -1,10 +1,12 @@
 package frc.robot.subsystems.intake;
 
+import frc.robot.util.energy.CurrentLimits;
+
 public final class IntakeConstants {
   public static final int MOTOR_ID = 17;
   public static final int FOLLOWER_MOTOR_ID = 2;
 
-  public static final double MAX_CURRENT = 100.0; // Amps
+  public static final double MAX_CURRENT = CurrentLimits.kIntake;
 
   public static final double kTolerance = 50; // RPM
 

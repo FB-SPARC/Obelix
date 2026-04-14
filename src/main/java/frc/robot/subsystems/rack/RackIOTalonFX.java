@@ -46,9 +46,6 @@ public class RackIOTalonFX implements RackIO {
   // Connection debouncer
   private final Debouncer connectedDebouncer = new Debouncer(0.5);
 
-  // Setpoint tracking
-  private double setpointMeters = 0.0;
-
   /** Pinion circumference in meters — one motor rotation moves the rack this distance. */
   private static final double kPinionCircumferenceMeters =
       2.0 * Math.PI * RackConstants.kPinionRadiusMeters;
@@ -119,76 +116,24 @@ public class RackIOTalonFX implements RackIO {
   }
 
   @Override
-  public void setVoltage(double voltage) {
-    motor.setControl(voltageRequest.withOutput(voltage));
+  public void applyOutputs(RackIOOutputs outputs) {
+    if (Constants.tuningMode) {
+      motor.setNeutralMode(outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast);
+    }
+    switch (outputs.mode) {
+      case BRAKE -> motor.setControl(voltageRequest.withOutput(0.0));
+      case VOLTAGE -> motor.setControl(voltageRequest.withOutput(outputs.volts));
+      case POSITION -> motor.setControl(
+          motionMagicRequest
+              .withPosition(metersToMotorRotations(outputs.positionMeters))
+              .withVelocity(outputs.kv)
+              .withAcceleration(outputs.ka)
+              .withJerk(outputs.kj));
+    }
   }
-
-  @Override
-  public double getMotorPositionDegrees() {
-    return Units.rotationsToDegrees(position.getValueAsDouble());
-  }
-
-  @Override
-  public double getRackPositionMeters() {
-    return motorRotationsToMeters(position.getValueAsDouble());
-  }
-
-  @Override
-  public double getVelocity() {
-    return Units.rotationsToDegrees(velocity.getValueAsDouble()) / RackConstants.kGearRatio;
-  }
-
-  @Override
-  public double getCurrent() {
-    return current.getValueAsDouble();
-  }
-
-  @Override
-  public double getVoltage() {
-    return appliedVolts.getValueAsDouble();
-  }
-
-  @Override
-  public void setRackPositionMeters(double meters, double kv, double ka, double kj) {
-    this.setpointMeters = meters;
-
-    double motorRotations = metersToMotorRotations(meters);
-
-    motor.setControl(
-        motionMagicRequest
-            .withPosition(motorRotations)
-            .withVelocity(kv)
-            .withAcceleration(ka)
-            .withJerk(kj));
-  }
-
-  @Override
-  public boolean isAtSetpoint() {
-    return Math.abs(setpointMeters - getRackPositionMeters()) <= RackConstants.kTolerance;
-  }
-
-  @Override
-  public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
-    Slot0Configs slot0 = new Slot0Configs();
-    slot0.kP = kP;
-    slot0.kI = kI;
-    slot0.kD = kD;
-    slot0.kS = kS;
-    slot0.kV = kV;
-    slot0.kA = kA;
-    motor.getConfigurator().apply(slot0);
-  }
-
-  @Override
-  public void resetEncoder() {
-    tryUntilOk(5, () -> motor.setPosition(0.0, 0.25));
-  }
-
-  // --- Conversion helpers ---
 
   /** Converts linear meters to motor rotations (accounting for gear ratio and pinion). */
   private double metersToMotorRotations(double meters) {
-    // meters → mechanism rotations → motor rotations
     double mechanismRotations = meters / kPinionCircumferenceMeters;
     return mechanismRotations * RackConstants.kGearRatio;
   }
@@ -197,10 +142,5 @@ public class RackIOTalonFX implements RackIO {
   private double motorRotationsToMeters(double motorRotations) {
     double mechanismRotations = motorRotations / RackConstants.kGearRatio;
     return mechanismRotations * kPinionCircumferenceMeters;
-  }
-
-  @Override
-  public void setBrakeMode(boolean brake) {
-    motor.setNeutralMode(brake ? NeutralModeValue.Brake : NeutralModeValue.Coast);
   }
 }

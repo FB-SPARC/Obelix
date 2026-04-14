@@ -10,12 +10,16 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandPS5Controller;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.AutoCommands;
@@ -23,6 +27,7 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.bed.Bed;
 import frc.robot.subsystems.bed.BedIO;
+import frc.robot.subsystems.bed.BedIOSim;
 import frc.robot.subsystems.bed.BedIOTalonFX;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -32,24 +37,30 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.feeder.Feeder;
 import frc.robot.subsystems.feeder.FeederIO;
+import frc.robot.subsystems.feeder.FeederIOSim;
 import frc.robot.subsystems.feeder.FeederIOTalonFX;
 import frc.robot.subsystems.hood.Hood;
 import frc.robot.subsystems.hood.HoodIO;
+import frc.robot.subsystems.hood.HoodIOSim;
 import frc.robot.subsystems.hood.HoodIOTalonFX;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIO;
+import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.intake.IntakeIOTalonFX;
 import frc.robot.subsystems.rack.Rack;
 import frc.robot.subsystems.rack.RackIO;
+import frc.robot.subsystems.rack.RackIOSim;
 import frc.robot.subsystems.rack.RackIOTalonFX;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterIOSim;
 import frc.robot.subsystems.shooter.ShooterIOTalonFX;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.Superstructure.State;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
+import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -58,6 +69,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
+@ExtensionMethod({frc.robot.util.TriggerUtil.class})
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
@@ -75,6 +87,8 @@ public class RobotContainer {
 
   // Controller
   private final CommandPS5Controller controller = new CommandPS5Controller(0);
+  private final Alert controllerDisconnectedAlert =
+      new Alert("Driver controller disconnected (port 0).", AlertType.kError);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
@@ -100,9 +114,8 @@ public class RobotContainer {
         shooter = new Shooter(new ShooterIOTalonFX());
         vision =
             new Vision(
-                drive::addVisionMeasurement,
-                new VisionIOLimelight("limelight-left", drive::getRotation),
-                new VisionIOLimelight("limelight-right", drive::getRotation));
+                new VisionIOLimelight("limelight-left", RobotState.getInstance()::getRotation),
+                new VisionIOLimelight("limelight-right", RobotState.getInstance()::getRotation));
         break;
 
       case SIM:
@@ -115,14 +128,14 @@ public class RobotContainer {
                 new ModuleIOSim(TunerConstants.BackLeft),
                 new ModuleIOSim(TunerConstants.BackRight));
 
-        bed = new Bed(new BedIO() {});
-        feeder = new Feeder(new FeederIO() {});
-        hood = new Hood(new HoodIO() {});
-        intake = new Intake(new IntakeIO() {});
-        rack = new Rack(new RackIO() {});
-        shooter = new Shooter(new ShooterIO() {});
+        bed = new Bed(new BedIOSim());
+        feeder = new Feeder(new FeederIOSim());
+        hood = new Hood(new HoodIOSim());
+        intake = new Intake(new IntakeIOSim());
+        rack = new Rack(new RackIOSim());
+        shooter = new Shooter(new ShooterIOSim());
 
-        vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
+        vision = new Vision(new VisionIO() {});
         break;
 
       default:
@@ -141,7 +154,7 @@ public class RobotContainer {
         intake = new Intake(new IntakeIO() {});
         rack = new Rack(new RackIO() {});
         shooter = new Shooter(new ShooterIO() {});
-        vision = new Vision(drive::addVisionMeasurement, new VisionIO() {});
+        vision = new Vision(new VisionIO() {});
         break;
     }
 
@@ -188,6 +201,15 @@ public class RobotContainer {
             () -> -controller.getLeftY(),
             () -> -controller.getLeftX(),
             () -> -controller.getRightX()));
+
+    // Rumble controller for 0.5s at teleop start
+    RobotModeTriggers.teleop()
+        .onTrue(
+            Commands.sequence(
+                Commands.runOnce(() -> controller.getHID().setRumble(RumbleType.kBothRumble, 1.0)),
+                new edu.wpi.first.wpilibj2.command.WaitCommand(0.5),
+                Commands.runOnce(
+                    () -> controller.getHID().setRumble(RumbleType.kBothRumble, 0.0))));
 
     // ── Superstructure state bindings ──────────────────────────────────────
     // Triangle: reset rack encoder for calibration
@@ -255,13 +277,34 @@ public class RobotContainer {
         .and(new Trigger(superstructure::isShooting))
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.ACTIVE), superstructure));
 
-    new Trigger(DriverStation::isTeleopEnabled)
+    // On teleop enable: set superstructure to ACTIVE (ready-to-drive state)
+    RobotModeTriggers.teleop()
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.ACTIVE), superstructure));
     // Touchpad: Emergency stop (true panic button)
     // Shuts down all motors immediately regardless of state
     controller
         .touchpad()
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.IDLE), superstructure));
+
+    // ── Hood angle trim ───────────────────────────────────────────────────────
+    // POV right: +0.2° per press (hold for continuous trim)
+    controller
+        .povRight()
+        .onTrue(Commands.runOnce(() -> superstructure.incrementHoodAngleOffset(0.2)))
+        .whileTrue(
+            Commands.repeatingSequence(
+                new edu.wpi.first.wpilibj2.command.WaitCommand(0.4),
+                Commands.runOnce(() -> superstructure.incrementHoodAngleOffset(0.2))));
+    // POV left: -0.2° per press (hold for continuous trim)
+    controller
+        .povLeft()
+        .onTrue(Commands.runOnce(() -> superstructure.incrementHoodAngleOffset(-0.2)))
+        .whileTrue(
+            Commands.repeatingSequence(
+                new edu.wpi.first.wpilibj2.command.WaitCommand(0.4),
+                Commands.runOnce(() -> superstructure.incrementHoodAngleOffset(-0.2))));
+    // POV down: reset trim to zero
+    controller.povDown().onTrue(Commands.runOnce(() -> superstructure.resetHoodAngleOffset()));
   }
 
   //   public void teleopInit() {
@@ -275,5 +318,15 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return autoChooser.get();
+  }
+
+  /** Called periodically from {@link Robot#robotPeriodic()}. */
+  public void periodic() {
+    // Update controller disconnection alert
+    controllerDisconnectedAlert.set(
+        !DriverStation.isJoystickConnected(controller.getHID().getPort()));
+    // Display hood angle trim on dashboard so operator can monitor it
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber(
+        "Hood Angle Offset (deg)", superstructure.getHoodAngleOffset());
   }
 }

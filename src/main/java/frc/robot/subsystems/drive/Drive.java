@@ -20,7 +20,6 @@ import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -39,18 +38,21 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.Mode;
+import frc.robot.Robot;
+import frc.robot.RobotState;
 import frc.robot.generated.TunerConstants;
+import frc.robot.util.FullSubsystem;
 import frc.robot.util.LocalADStarAK;
+import frc.robot.util.LoggedTracer;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class Drive extends SubsystemBase {
+public class Drive extends FullSubsystem {
   // TunerConstants doesn't include these constants, so they are declared locally
   static final double ODOMETRY_FREQUENCY = TunerConstants.kCANBus.isNetworkFD() ? 250.0 : 100.0;
   public static final double DRIVE_BASE_RADIUS =
@@ -92,6 +94,7 @@ public class Drive extends SubsystemBase {
 
   private SwerveDriveKinematics kinematics = new SwerveDriveKinematics(getModuleTranslations());
   private Rotation2d rawGyroRotation = Rotation2d.kZero;
+  private SwerveModuleState[] pendingSetpointStates = null;
   private SwerveModulePosition[] lastModulePositions = // For delta tracking
       new SwerveModulePosition[] {
         new SwerveModulePosition(),
@@ -99,8 +102,6 @@ public class Drive extends SubsystemBase {
         new SwerveModulePosition(),
         new SwerveModulePosition()
       };
-  private SwerveDrivePoseEstimator poseEstimator =
-      new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, Pose2d.kZero);
 
   public Drive(
       GyroIO gyroIO,
@@ -208,15 +209,32 @@ public class Drive extends SubsystemBase {
         rawGyroRotation = rawGyroRotation.plus(new Rotation2d(twist.dtheta));
       }
 
-      // Apply update
-      poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
+      // Apply update to RobotState
+      RobotState.getInstance()
+          .addOdometryObservation(
+              sampleTimestamps[i], gyroInputs.connected ? rawGyroRotation : null, modulePositions);
     }
 
-    // Update gyro alert
-    gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
+    // Update measured robot velocity in RobotState
+    RobotState.getInstance().setRobotVelocity(getChassisSpeeds());
+
+    // Update gyro alert (gated on showHardwareAlerts() to suppress false positives during boot)
+    gyroDisconnectedAlert.set(Robot.showHardwareAlerts() && !gyroInputs.connected);
+
+    // Report total swerve stator current to battery logger (4 drive + 4 turn motors).
+    // Note: stator current, not supply current — reflects torque demand, not battery draw.
+    // Supply current would be more accurate for true energy accounting, but stator is what
+    // Phoenix 6 exposes per-motor and is consistent with all other subsystems in this codebase.
+    double totalDriveCurrent = 0.0;
+    for (var module : modules) {
+      totalDriveCurrent += module.getTotalCurrentAmps();
+    }
+    Robot.batteryLogger.reportCurrentUsage("Drive (stator A)", true, totalDriveCurrent);
 
     // Keep Field2d in sync for Elastic / Shuffleboard
     field2d.setRobotPose(getPose());
+
+    LoggedTracer.record("Drive");
   }
 
   /**
@@ -226,7 +244,7 @@ public class Drive extends SubsystemBase {
    */
   public void runVelocity(ChassisSpeeds speeds) {
     // Calculate module setpoints
-    ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
+    ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, Constants.loopPeriodSecs);
     SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
     SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, TunerConstants.kSpeedAt12Volts);
 
@@ -234,13 +252,8 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("SwerveStates/Setpoints", setpointStates);
     Logger.recordOutput("SwerveChassisSpeeds/Setpoints", discreteSpeeds);
 
-    // Send setpoints to modules
-    for (int i = 0; i < 4; i++) {
-      modules[i].runSetpoint(setpointStates[i]);
-    }
-
-    // Log optimized setpoints (runSetpoint mutates each state)
-    Logger.recordOutput("SwerveStates/SetpointsOptimized", setpointStates);
+    // Store desired states — applied in periodicAfterScheduler() after all commands have run
+    pendingSetpointStates = setpointStates;
   }
 
   /** Runs the drive in a straight line with the specified drive output. */
@@ -291,7 +304,7 @@ public class Drive extends SubsystemBase {
   }
 
   /** Returns the module positions (turn angles and drive positions) for all of the modules. */
-  private SwerveModulePosition[] getModulePositions() {
+  SwerveModulePosition[] getModulePositions() {
     SwerveModulePosition[] states = new SwerveModulePosition[4];
     for (int i = 0; i < 4; i++) {
       states[i] = modules[i].getPosition();
@@ -326,7 +339,7 @@ public class Drive extends SubsystemBase {
   /** Returns the current odometry pose. */
   @AutoLogOutput(key = "Odometry/Robot")
   public Pose2d getPose() {
-    return poseEstimator.getEstimatedPosition();
+    return RobotState.getInstance().getEstimatedPose();
   }
 
   /** Returns the current odometry rotation. */
@@ -336,16 +349,16 @@ public class Drive extends SubsystemBase {
 
   /** Resets the current odometry pose. */
   public void setPose(Pose2d pose) {
-    poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
+    RobotState.getInstance().resetPose(pose);
   }
 
-  /** Adds a new timestamped vision measurement. */
+  /** Adds a new timestamped vision measurement. Delegates to {@link RobotState}. */
   public void addVisionMeasurement(
       Pose2d visionRobotPoseMeters,
       double timestampSeconds,
       Matrix<N3, N1> visionMeasurementStdDevs) {
-    poseEstimator.addVisionMeasurement(
-        visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs);
+    RobotState.getInstance()
+        .addVisionMeasurement(visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs);
   }
 
   /** Returns the maximum linear speed in meters per sec. */
@@ -366,5 +379,21 @@ public class Drive extends SubsystemBase {
       new Translation2d(TunerConstants.BackLeft.LocationX, TunerConstants.BackLeft.LocationY),
       new Translation2d(TunerConstants.BackRight.LocationX, TunerConstants.BackRight.LocationY)
     };
+  }
+
+  /**
+   * Called after the full command scheduler cycle completes. Applies any module setpoints that were
+   * stored by runVelocity() during the scheduler run, ensuring outputs are written after all
+   * subsystems have updated their state.
+   */
+  @Override
+  public void periodicAfterScheduler() {
+    if (pendingSetpointStates == null) return;
+    for (int i = 0; i < 4; i++) {
+      modules[i].runSetpoint(pendingSetpointStates[i]);
+    }
+    // Log optimized setpoints (runSetpoint mutates each state in place)
+    Logger.recordOutput("SwerveStates/SetpointsOptimized", pendingSetpointStates);
+    pendingSetpointStates = null;
   }
 }

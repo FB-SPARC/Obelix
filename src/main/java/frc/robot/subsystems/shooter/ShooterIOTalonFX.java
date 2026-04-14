@@ -62,9 +62,6 @@ public class ShooterIOTalonFX implements ShooterIO {
   private final Debouncer follower2Debouncer = new Debouncer(0.5);
   private final Debouncer follower3Debouncer = new Debouncer(0.5);
 
-  // Setpoint tracking
-  private double setpointRPM = 0.0;
-
   public ShooterIOTalonFX() {
     leaderMotor = new TalonFX(ShooterConstants.LEADER_MOTOR_ID, Constants.canivore);
     followerMotor1 = new TalonFX(ShooterConstants.FOLLOWER_MOTOR_1_ID, Constants.canivore);
@@ -177,71 +174,22 @@ public class ShooterIOTalonFX implements ShooterIO {
     inputs.followerMotor3VelocityRPM = follower3Velocity.getValueAsDouble() * 60.0;
     inputs.followerMotor3Voltage = follower3AppliedVolts.getValueAsDouble();
     inputs.followerMotor3Current = follower3Current.getValueAsDouble();
-
-    inputs.shooterSetpointRPM = setpointRPM;
   }
 
   @Override
-  public void setVoltage(double voltage) {
-    leaderMotor.setControl(voltageRequest.withOutput(voltage));
-  }
-
-  @Override
-  public double getShooterRPM() {
-    return leaderVelocity.getValueAsDouble() * 60.0;
-  }
-
-  @Override
-  public double getVelocity() {
-    return leaderVelocity.getValueAsDouble() * 60.0;
-  }
-
-  @Override
-  public double getCurrent() {
-    return leaderCurrent.getValueAsDouble();
-  }
-
-  @Override
-  public double getVoltage() {
-    return leaderAppliedVolts.getValueAsDouble();
-  }
-
-  @Override
-  public void setShooterRPM(double rpm) {
-    this.setpointRPM = rpm;
-    // Convert RPM → rotations per second for TalonFX
-    double rps = rpm / 60.0;
-    leaderMotor.setControl(velocityRequest.withVelocity(rps));
-  }
-
-  @Override
-  public boolean isAtSetpoint() {
-    return Math.abs(setpointRPM - getShooterRPM()) <= ShooterConstants.kTolerance;
-  }
-
-  @Override
-  public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
-    Slot0Configs slot0 = new Slot0Configs();
-    slot0.kP = kP;
-    slot0.kI = kI;
-    slot0.kD = kD;
-    slot0.kS = kS;
-    slot0.kV = kV;
-    slot0.kA = kA;
-    leaderMotor.getConfigurator().apply(slot0);
-  }
-
-  @Override
-  public void resetEncoder() {
-    tryUntilOk(5, () -> leaderMotor.setPosition(0.0, 0.25));
-  }
-
-  @Override
-  public void setBrakeMode(boolean brake) {
-    var mode = brake ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-    leaderMotor.setNeutralMode(mode);
-    followerMotor1.setNeutralMode(mode);
-    followerMotor2.setNeutralMode(mode);
-    followerMotor3.setNeutralMode(mode);
+  public void applyOutputs(ShooterIOOutputs outputs) {
+    if (Constants.tuningMode) {
+      var neutralMode = outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+      leaderMotor.setNeutralMode(neutralMode);
+      followerMotor1.setNeutralMode(neutralMode);
+      followerMotor2.setNeutralMode(neutralMode);
+      followerMotor3.setNeutralMode(neutralMode);
+    }
+    switch (outputs.mode) {
+      case BRAKE -> leaderMotor.setControl(voltageRequest.withOutput(0.0));
+      case VOLTAGE -> leaderMotor.setControl(voltageRequest.withOutput(outputs.volts));
+      case VELOCITY -> leaderMotor.setControl(
+          velocityRequest.withVelocity(outputs.velocityRPM / 60.0));
+    }
   }
 }

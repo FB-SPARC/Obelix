@@ -16,44 +16,26 @@ public interface HoodIO {
     public double absoluteEncoderPositionDegrees = 0.0;
   }
 
+  /** Output mode for the hood motor. */
+  public static enum HoodOutputMode {
+    VOLTAGE,
+    POSITION,
+    BRAKE
+  }
+
+  /** Desired outputs written by the subsystem and applied atomically by the IO layer. */
+  public static class HoodIOOutputs {
+    public HoodOutputMode mode = HoodOutputMode.BRAKE;
+    /** Target position in degrees (used when mode == POSITION). */
+    public double positionDegrees = 0.0;
+    /** Target voltage (used when mode == VOLTAGE). */
+    public double volts = 0.0;
+    /** Whether to use brake or coast neutral mode. */
+    public boolean brakeMode = true;
+  }
+
   public default void updateInputs(HoodIOInputs inputs) {}
 
-  // Sets motor voltage from -12V to 12V
-  public default void setVoltage(double voltage) {}
-
-  public default double getMotorPositionDegrees() {
-    return 0.0;
-  }
-
-  public default double getHoodPositionDegrees() {
-    return 0.0;
-  }
-
-  // Returns velocity of the motor in degrees per second
-  public default double getVelocity() {
-    return 0.0;
-  }
-
-  // Returns current of the motor in amps
-  public default double getCurrent() {
-    return 0.0;
-  }
-
-  // Returns voltage of the motor in volts
-  public default double getVoltage() {
-    return 0.0;
-  }
-
-  public default boolean isAtSetpoint() {
-    return false;
-  }
-
-  public default void setHoodPositionDegrees(double degrees) {}
-
-  public default void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {}
-
-  public default void resetEncoder() {}
-
-  /** Set brake mode (true) or coast mode (false). */
-  public default void setBrakeMode(boolean brake) {}
+  /** Apply the desired outputs (called once per cycle after the scheduler). */
+  public default void applyOutputs(HoodIOOutputs outputs) {}
 }
