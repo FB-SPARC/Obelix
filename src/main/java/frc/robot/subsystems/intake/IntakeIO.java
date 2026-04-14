@@ -9,6 +9,11 @@ public interface IntakeIO {
     public double leaderMotorCurrent = 0.0;
     public double leaderMotorVoltage = 0.0;
     public double leaderMotorVelocityRPM = 0.0;
+
+    public boolean followerMotorConnected = false;
+    public double followerMotorCurrent = 0.0;
+    public double followerMotorVoltage = 0.0;
+    public double followerMotorVelocityRPM = 0.0;
   }
 
   public default void updateInputs(IntakeIOInputs inputs) {}

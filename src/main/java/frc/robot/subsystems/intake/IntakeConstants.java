@@ -2,6 +2,7 @@ package frc.robot.subsystems.intake;
 
 public final class IntakeConstants {
   public static final int MOTOR_ID = 17;
+  public static final int FOLLOWER_MOTOR_ID = 2;
 
   public static final double MAX_CURRENT = 100.0; // Amps
 

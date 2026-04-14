@@ -39,8 +39,9 @@ public class AutoCommands {
    */
   public static Command intakeMode(Superstructure superstructure, Rack rack) {
     return Commands.runOnce(() -> superstructure.setState(State.INTAKING), superstructure)
-        .andThen(Commands.waitUntil(rack::isAtSetpoint)) // Wait for rack to reach MAX_POSITION
-        .finallyDo(() -> superstructure.setState(State.ACTIVE)); // Always return to ACTIVE
+        .andThen(
+            Commands.waitUntil(rack::isAtSetpoint)
+                .withTimeout(2.0)); // Wait for rack to reach MAX_POSITION
   }
 
   /**

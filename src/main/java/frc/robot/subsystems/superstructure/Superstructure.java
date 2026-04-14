@@ -41,7 +41,7 @@ public class Superstructure extends SubsystemBase {
   private final Shooter shooter;
   private final Drive drive;
 
-  private static final double SHOOTER_RPM_SCALE = 1.90;
+  private static final double SHOOTER_RPM_SCALE = 1.95;
 
   // ── State machine ──────────────────────────────────────────────────────────
   public enum State {
@@ -145,7 +145,7 @@ public class Superstructure extends SubsystemBase {
    * stall time. Other systems idle.
    */
   private void handleIntaking() {
-    intake.setVoltage(9.5); // Full power intake
+    intake.setVoltage(9); // Full power intake
     rack.setPosition(
         RackConstants.MAX_POSITION_METERS,
         RackConstants.kCruiseVelocity * 10, // Aggressive deploy speed

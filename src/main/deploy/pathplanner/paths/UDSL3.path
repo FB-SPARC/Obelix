@@ -84,12 +84,12 @@
         "y": 7.507214977645306
       },
       "prevControl": {
-        "x": 6.115750116593778,
-        "y": 7.2914676761005675
+        "x": 6.143219538692345,
+        "y": 7.473621547282819
       },
       "nextControl": {
-        "x": 4.550094017790612,
-        "y": 7.706962381240687
+        "x": 4.9902607060185185,
+        "y": 7.519706597222221
       },
       "isLocked": false,
       "linkedName": null
@@ -100,8 +100,8 @@
         "y": 6.521044674459762
       },
       "prevControl": {
-        "x": 2.6324813956677433,
-        "y": 6.940793775679439
+        "x": 2.2797583912037043,
+        "y": 7.713651331018518
       },
       "nextControl": null,
       "isLocked": false,
@@ -135,14 +135,41 @@
     },
     {
       "waypointRelativePos": 4.8405633223684195,
-      "rotationDegrees": 0.0
+      "rotationDegrees": 180.0
     },
     {
       "waypointRelativePos": 5.610043174342107,
-      "rotationDegrees": 0.0
+      "rotationDegrees": 180.0
     }
   ],
-  "constraintZones": [],
+  "constraintZones": [
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 0,
+      "maxWaypointRelativePos": 0.8168085548172757,
+      "constraints": {
+        "maxVelocity": 2.5,
+        "maxAcceleration": 6.5,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 1080.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    },
+    {
+      "name": "Constraints Zone",
+      "minWaypointRelativePos": 4.740214908637874,
+      "maxWaypointRelativePos": 5.185761004983381,
+      "constraints": {
+        "maxVelocity": 2.5,
+        "maxAcceleration": 6.5,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 1080.0,
+        "nominalVoltage": 12.0,
+        "unlimited": false
+      }
+    }
+  ],
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
@@ -155,7 +182,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -49.45768520137833
+    "rotation": -49.45768520137834
   },
   "reversed": false,
   "folder": "UD Swing Left",

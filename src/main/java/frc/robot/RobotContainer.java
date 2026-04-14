@@ -191,7 +191,7 @@ public class RobotContainer {
 
     // ── Superstructure state bindings ──────────────────────────────────────
     // Triangle: reset rack encoder for calibration
-    controller.triangle().onTrue(Commands.runOnce(() -> rack.resetEncoder(), rack));
+    // controller.triangle().onTrue(Commands.runOnce(() -> rack.resetEncoder(), rack));
 
     // R1: Intake control (press → INTAKING, release → ACTIVE if was intaking)
     controller
@@ -255,10 +255,7 @@ public class RobotContainer {
         .and(new Trigger(superstructure::isShooting))
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.ACTIVE), superstructure));
 
-
-    new Trigger(
-        DriverStation::isTeleopEnabled
-        )
+    new Trigger(DriverStation::isTeleopEnabled)
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.ACTIVE), superstructure));
     // Touchpad: Emergency stop (true panic button)
     // Shuts down all motors immediately regardless of state
@@ -267,9 +264,9 @@ public class RobotContainer {
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.IDLE), superstructure));
   }
 
-//   public void teleopInit() {
-//     if (superstructure != null) superstructure.setState(State.ACTIVE);
-//   }
+  //   public void teleopInit() {
+  //     if (superstructure != null) superstructure.setState(State.ACTIVE);
+  //   }
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
