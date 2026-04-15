@@ -6,12 +6,15 @@
 // at the root directory of this project.
 package frc.robot;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
+import choreo.Choreo;
+import choreo.trajectory.SwerveSample;
+import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.XboxController;
@@ -23,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.AutoCommands;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.DriveTrajectory;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.bed.Bed;
 import frc.robot.subsystems.bed.BedIO;
@@ -59,7 +63,12 @@ import frc.robot.subsystems.superstructure.Superstructure.State;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -91,6 +100,8 @@ public class RobotContainer {
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
+  private final Map<Command, List<Trajectory<SwerveSample>>> autoTrajectories = new HashMap<>();
+  private Command lastDisplayedAuto = null;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -160,11 +171,13 @@ public class RobotContainer {
     // Create superstructure (coordinates all non-drive subsystems + drive)
     superstructure = new Superstructure(bed, feeder, hood, intake, rack, shooter, drive);
 
-    NamedCommands.registerCommand("Intake Mode", AutoCommands.intakeMode(superstructure, rack));
-    NamedCommands.registerCommand(
-        "Shoot", AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget));
     // Set up auto routines
-    autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
+    autoChooser = new LoggedDashboardChooser<>("Auto Choices");
+    autoChooser.addDefaultOption("None", Commands.none());
+    autoChooser.addOption("Left Double Swing", leftDoubleSwingAuto());
+    autoChooser.addOption("Right Double Swing", rightDoubleSwingAuto());
+    autoChooser.addOption("Mid", midAuto());
+    autoChooser.addOption("Mid Depot", midDepotAuto());
 
     // Set up SysId routines
     autoChooser.addOption(
@@ -304,5 +317,110 @@ public class RobotContainer {
     // Update controller disconnection alert
     controllerDisconnectedAlert.set(
         !DriverStation.isJoystickConnected(controller.getHID().getPort()));
+
+    // Display the selected auto's trajectory on the Field2d widget
+    Command selectedAuto = autoChooser.get();
+    if (selectedAuto != lastDisplayedAuto) {
+      lastDisplayedAuto = selectedAuto;
+      List<Trajectory<SwerveSample>> trajs = autoTrajectories.getOrDefault(selectedAuto, List.of());
+      List<Pose2d> allPoses = new ArrayList<>();
+      boolean mirror = shouldMirror();
+      for (var traj : trajs) {
+        for (var sample : traj.samples()) {
+          allPoses.add(mirror ? sample.flipped().getPose() : sample.getPose());
+        }
+      }
+      Pose2d[] posesArray = allPoses.toArray(Pose2d[]::new);
+      drive.setAutoTrajectory(posesArray);
+      Logger.recordOutput("Odometry/AutoTrajectory", posesArray);
+    }
+  }
+
+  // ── Choreo auto helpers ───────────────────────────────────────────────────
+
+  private boolean shouldMirror() {
+    return DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red;
+  }
+
+  /**
+   * Loads a Choreo trajectory by name and returns a command to follow it. If {@code resetPose} is
+   * true, resets odometry to the trajectory's initial pose before driving. The loaded trajectory is
+   * also appended to {@code accumulator} for dashboard visualization.
+   */
+  private Command followTrajectory(
+      String name, boolean resetPose, List<Trajectory<SwerveSample>> accumulator) {
+    var rawOpt = Choreo.loadTrajectory(name);
+    if (rawOpt.isEmpty()) {
+      return Commands.print("WARNING: Choreo trajectory '" + name + "' not found.");
+    }
+    @SuppressWarnings("unchecked")
+    Trajectory<SwerveSample> trajectory = (Trajectory<SwerveSample>) rawOpt.get();
+    accumulator.add(trajectory);
+    Command resetCmd =
+        resetPose
+            ? Commands.runOnce(
+                () ->
+                    trajectory
+                        .getInitialSample(shouldMirror())
+                        .ifPresent(s -> drive.setPose(s.getPose())))
+            : Commands.none();
+    return resetCmd.andThen(new DriveTrajectory(trajectory, drive, this::shouldMirror));
+  }
+
+  /** Registers an auto command with its trajectories for dashboard visualization. */
+  private Command registerAutoTrajectories(
+      Command auto, List<Trajectory<SwerveSample>> trajectories) {
+    autoTrajectories.put(auto, trajectories);
+    return auto;
+  }
+
+  // ── Auto routines ─────────────────────────────────────────────────────────
+
+  private Command leftDoubleSwingAuto() {
+    List<Trajectory<SwerveSample>> trajs = new ArrayList<>();
+    return registerAutoTrajectories(
+        Commands.sequence(
+            AutoCommands.intakeMode(superstructure, rack),
+            followTrajectory("udl1", true, trajs),
+            followTrajectory("udl2", false, trajs),
+            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget),
+            AutoCommands.intakeMode(superstructure, rack),
+            followTrajectory("udl3", false, trajs),
+            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget)),
+        trajs);
+  }
+
+  private Command rightDoubleSwingAuto() {
+    List<Trajectory<SwerveSample>> trajs = new ArrayList<>();
+    return registerAutoTrajectories(
+        Commands.sequence(
+            AutoCommands.intakeMode(superstructure, rack),
+            followTrajectory("d1", true, trajs),
+            followTrajectory("d2", false, trajs),
+            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget),
+            AutoCommands.intakeMode(superstructure, rack),
+            followTrajectory("d3", false, trajs),
+            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget)),
+        trajs);
+  }
+
+  private Command midAuto() {
+    List<Trajectory<SwerveSample>> trajs = new ArrayList<>();
+    return registerAutoTrajectories(
+        Commands.sequence(
+            followTrajectory("M1", true, trajs),
+            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget)),
+        trajs);
+  }
+
+  private Command midDepotAuto() {
+    List<Trajectory<SwerveSample>> trajs = new ArrayList<>();
+    return registerAutoTrajectories(
+        Commands.sequence(
+            AutoCommands.intakeMode(superstructure, rack),
+            followTrajectory("MD1", true, trajs),
+            followTrajectory("MD2", false, trajs),
+            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget)),
+        trajs);
   }
 }

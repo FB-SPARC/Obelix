@@ -1,0 +1,113 @@
+{
+ "name":"Obelix",
+ "version":2,
+ "type":"Swerve",
+ "variables":{
+  "expressions":{},
+  "poses":{
+   "d1e":{
+    "x":{
+     "exp":"d1e.x",
+     "val":8.199119567871094
+    },
+    "y":{
+     "exp":"d1e.y",
+     "val":4.925804615020752
+    },
+    "heading":{
+     "exp":"d1e.heading",
+     "val":1.3962634015954636
+    }
+   },
+   "udl2e":{
+    "x":{
+     "exp":"2.9683170318603516 m",
+     "val":2.9683170318603516
+    },
+    "y":{
+     "exp":"6.816893577575684 m",
+     "val":6.816893577575684
+    },
+    "heading":{
+     "exp":"-1.0364700815291115 rad",
+     "val":-1.0364700815291117
+    }
+   }
+  }
+ },
+ "config":{
+  "frontLeft":{
+   "x":{
+    "exp":"11.15453 in",
+    "val":0.28332506199999996
+   },
+   "y":{
+    "exp":"10.170275 in",
+    "val":0.258324985
+   }
+  },
+  "backLeft":{
+   "x":{
+    "exp":"-11.15453 in",
+    "val":-0.28332506199999996
+   },
+   "y":{
+    "exp":"10.170275 in",
+    "val":0.258324985
+   }
+  },
+  "mass":{
+   "exp":"61 kg",
+   "val":61.0
+  },
+  "inertia":{
+   "exp":"6.883 kg m ^ 2",
+   "val":6.883
+  },
+  "gearing":{
+   "exp":"6.026785714285714",
+   "val":6.026785714285714
+  },
+  "radius":{
+   "exp":"1.914 in",
+   "val":0.048615599999999995
+  },
+  "vmax":{
+   "exp":"6000 RPM",
+   "val":628.3185307179587
+  },
+  "tmax":{
+   "exp":"1.536 N * m",
+   "val":1.536
+  },
+  "cof":{
+   "exp":"1.2",
+   "val":1.2
+  },
+  "bumper":{
+   "front":{
+    "exp":"17.125984251968504 in",
+    "val":0.435
+   },
+   "side":{
+    "exp":"16.535433070866144 in",
+    "val":0.42
+   },
+   "back":{
+    "exp":"17.125984251968504 in",
+    "val":0.435
+   }
+  },
+  "differentialTrackWidth":{
+   "exp":"21.496062992125985 in",
+   "val":0.546
+  }
+ },
+ "generationFeatures":[],
+ "codegen":{
+  "root":"../../java/frc/robot/generated",
+  "genVars":false,
+  "genTrajData":false,
+  "useChoreoLib":false
+ }
+}
