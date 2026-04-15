@@ -310,7 +310,6 @@ public class Drive extends FullSubsystem {
   }
 
   /** Returns the measured chassis speeds of the robot. */
-  @AutoLogOutput(key = "SwerveChassisSpeeds/Measured")
   private ChassisSpeeds getChassisSpeeds() {
     return kinematics.toChassisSpeeds(getModuleStates());
   }
@@ -334,7 +333,6 @@ public class Drive extends FullSubsystem {
   }
 
   /** Returns the current odometry pose. */
-  @AutoLogOutput(key = "Odometry/Robot")
   public Pose2d getPose() {
     return RobotState.getInstance().getEstimatedPose();
   }

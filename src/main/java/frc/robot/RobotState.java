@@ -22,6 +22,7 @@ import edu.wpi.first.math.numbers.N3;
 import frc.robot.subsystems.drive.Drive;
 import java.util.NoSuchElementException;
 import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.AutoLogOutputManager;
 
 /**
  * Centralises robot state: pose estimation, velocity tracking, and timestamped pose lookup.
@@ -106,6 +107,7 @@ public class RobotState {
     for (int i = 0; i < 3; i++) {
       qStdDevs.set(i, 0, Math.pow(ODOMETRY_STD_DEVS.get(i, 0), 2));
     }
+    AutoLogOutputManager.addObject(this);
   }
 
   // ── Odometry ──────────────────────────────────────────────────────────────

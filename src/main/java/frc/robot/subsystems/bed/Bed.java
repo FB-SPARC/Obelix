@@ -30,18 +30,12 @@ public class Bed extends FullSubsystem {
   private final BedIOOutputs outputs = new BedIOOutputs();
 
   // ── Tunable PID/FF gains ──────────────────────────────────────────────────
-  private static final LoggedTunableNumber kP =
-      new LoggedTunableNumber("Bed/kP", BedConstants.kP);
-  private static final LoggedTunableNumber kI =
-      new LoggedTunableNumber("Bed/kI", BedConstants.kI);
-  private static final LoggedTunableNumber kD =
-      new LoggedTunableNumber("Bed/kD", BedConstants.kD);
-  private static final LoggedTunableNumber kS =
-      new LoggedTunableNumber("Bed/kS", BedConstants.kS);
-  private static final LoggedTunableNumber kV =
-      new LoggedTunableNumber("Bed/kV", BedConstants.kV);
-  private static final LoggedTunableNumber kA =
-      new LoggedTunableNumber("Bed/kA", BedConstants.kA);
+  private static final LoggedTunableNumber kP = new LoggedTunableNumber("Bed/kP", BedConstants.kP);
+  private static final LoggedTunableNumber kI = new LoggedTunableNumber("Bed/kI", BedConstants.kI);
+  private static final LoggedTunableNumber kD = new LoggedTunableNumber("Bed/kD", BedConstants.kD);
+  private static final LoggedTunableNumber kS = new LoggedTunableNumber("Bed/kS", BedConstants.kS);
+  private static final LoggedTunableNumber kV = new LoggedTunableNumber("Bed/kV", BedConstants.kV);
+  private static final LoggedTunableNumber kA = new LoggedTunableNumber("Bed/kA", BedConstants.kA);
 
   private final Alert leaderDisconnectedAlert =
       new Alert("Bed leader motor disconnected!", AlertType.kError);
