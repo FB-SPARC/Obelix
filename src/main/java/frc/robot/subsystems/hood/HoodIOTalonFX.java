@@ -60,9 +60,6 @@ public class HoodIOTalonFX implements HoodIO {
   private final Debouncer motorConnectedDebouncer = new Debouncer(0.5);
   private final Debouncer encoderConnectedDebouncer = new Debouncer(0.5);
 
-  // Setpoint tracking (kept for isAtSetpoint reference in updateInputs)
-  private double setpointDegrees = 0.0;
-
   public HoodIOTalonFX() {
     motor = new TalonFX(HoodConstants.MOTOR_ID, Constants.canivore);
     encoder = new CANcoder(HoodConstants.CANCODER_ID, Constants.canivore);
@@ -168,7 +165,6 @@ public class HoodIOTalonFX implements HoodIO {
       case BRAKE -> motor.setControl(voltageRequest.withOutput(0.0));
       case VOLTAGE -> motor.setControl(voltageRequest.withOutput(outputs.volts));
       case POSITION -> {
-        this.setpointDegrees = outputs.positionDegrees;
         motor.setControl(
             motionMagicRequest.withPosition(
                 edu.wpi.first.math.util.Units.degreesToRotations(outputs.positionDegrees)));
