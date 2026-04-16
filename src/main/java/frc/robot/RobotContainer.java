@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandPS5Controller;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.FieldConstants.AprilTagLayoutType;
 import frc.robot.commands.AutoCommands;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.DriveTrajectory;
@@ -63,6 +64,7 @@ import frc.robot.subsystems.superstructure.Superstructure.State;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
+import frc.robot.subsystems.vision.VisionIONorthstar;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -145,7 +147,10 @@ public class RobotContainer {
         rack = new Rack(new RackIOSim());
         shooter = new Shooter(new ShooterIOSim());
 
-        vision = new Vision(new VisionIO() {});
+        vision =
+            new Vision(
+                new VisionIONorthstar(
+                    0, () -> AprilTagLayoutType.OFFICIAL, RobotState.getInstance()::getRotation));
         break;
 
       default:

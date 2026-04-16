@@ -35,7 +35,8 @@ public interface VisionIO {
   public static enum PoseObservationType {
     MEGATAG_1,
     MEGATAG_2,
-    PHOTONVISION
+    PHOTONVISION,
+    NORTHSTAR
   }
 
   public default void updateInputs(VisionIOInputs inputs) {}
