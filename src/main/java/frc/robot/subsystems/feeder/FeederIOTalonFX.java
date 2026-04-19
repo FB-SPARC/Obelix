@@ -23,9 +23,9 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.units.measure.AngularVelocity;
+import frc.robot.Constants;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import frc.robot.Constants;
 
 /**
  * FeederIOTalonFX implements the FeederIO interface using two CTRE TalonFX motor controllers. The
@@ -144,11 +144,6 @@ public class FeederIOTalonFX implements FeederIO {
 
   @Override
   public void applyOutputs(FeederIOOutputs outputs) {
-    if (Constants.tuningMode) {
-      var neutralMode = outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-      leaderMotor.setNeutralMode(neutralMode);
-      followerMotor.setNeutralMode(neutralMode);
-    }
     switch (outputs.mode) {
       case BRAKE -> leaderMotor.setControl(voltageRequest.withOutput(0.0));
       case VOLTAGE -> leaderMotor.setControl(voltageRequest.withOutput(outputs.volts));

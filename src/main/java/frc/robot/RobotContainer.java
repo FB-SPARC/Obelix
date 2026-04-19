@@ -150,7 +150,9 @@ public class RobotContainer {
         vision =
             new Vision(
                 new VisionIONorthstar(
-                    0, () -> AprilTagLayoutType.OFFICIAL, RobotState.getInstance()::getRotation));
+                    0, () -> AprilTagLayoutType.OFFICIAL, RobotState.getInstance()::getRotation),
+                new VisionIONorthstar(
+                    1, () -> AprilTagLayoutType.OFFICIAL, RobotState.getInstance()::getRotation));
         break;
 
       default:

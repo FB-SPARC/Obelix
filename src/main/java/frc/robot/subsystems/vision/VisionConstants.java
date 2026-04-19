@@ -70,13 +70,22 @@ public class VisionConstants {
   /**
    * Northstar cameras installed on Obelix, indexed so that {@code northstarCameras[i]} matches the
    * Northstar instance running under the NT table {@code northstar_i}.
-   *
    */
   public static final NorthstarCameraConfig[] northstarCameras =
       new NorthstarCameraConfig[] {
         // Camera 0 – iPhone via Continuity Camera (testing)
         new NorthstarCameraConfig(
             "1", // iPhone camera index
+            1280,
+            720,
+            3, // auto exposure ON (CAP_PROP_AUTO_EXPOSURE=3 on macOS)
+            300,
+            0.0,
+            0.0,
+            1.0,
+            new Transform3d(0.0, 0.0, 0.0, new Rotation3d())),
+        new NorthstarCameraConfig(
+            "0", // iPhone camera index
             1280,
             720,
             3, // auto exposure ON (CAP_PROP_AUTO_EXPOSURE=3 on macOS)

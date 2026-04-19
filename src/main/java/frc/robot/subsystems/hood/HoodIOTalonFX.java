@@ -27,10 +27,10 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
+import frc.robot.Constants;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import frc.robot.Constants;
 
 /**
  * HoodIOTalonFX implements the HoodIO interface using a CTRE TalonFX motor controller and a
@@ -158,9 +158,6 @@ public class HoodIOTalonFX implements HoodIO {
 
   @Override
   public void applyOutputs(HoodIOOutputs outputs) {
-    if (Constants.tuningMode) {
-      motor.setNeutralMode(outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast);
-    }
     switch (outputs.mode) {
       case BRAKE -> motor.setControl(voltageRequest.withOutput(0.0));
       case VOLTAGE -> motor.setControl(voltageRequest.withOutput(outputs.volts));

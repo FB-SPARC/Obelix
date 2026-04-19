@@ -24,9 +24,9 @@ import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import frc.robot.Constants;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import frc.robot.Constants;
 
 /**
  * RackIOTalonFX implements the RackIO interface using a CTRE TalonFX motor controller. It manages a
@@ -128,9 +128,6 @@ public class RackIOTalonFX implements RackIO {
 
   @Override
   public void applyOutputs(RackIOOutputs outputs) {
-    if (Constants.tuningMode) {
-      motor.setNeutralMode(outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast);
-    }
     switch (outputs.mode) {
       case BRAKE -> motor.setControl(voltageRequest.withOutput(0.0));
       case VOLTAGE -> motor.setControl(voltageRequest.withOutput(outputs.volts));

@@ -25,7 +25,6 @@ import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import frc.robot.Constants;
 
 /**
  * BedIOTalonFX implements the BedIO interface using two CTRE TalonFX motor controllers. The leader
@@ -136,11 +135,6 @@ public class BedIOTalonFX implements BedIO {
 
   @Override
   public void applyOutputs(BedIOOutputs outputs) {
-    if (Constants.tuningMode) {
-      var neutralMode = outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-      leaderMotor.setNeutralMode(neutralMode);
-      followerMotor.setNeutralMode(neutralMode);
-    }
     switch (outputs.mode) {
       case BRAKE -> leaderMotor.setControl(voltageRequest.withOutput(0.0));
       case VOLTAGE -> leaderMotor.setControl(voltageRequest.withOutput(outputs.volts));

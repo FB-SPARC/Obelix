@@ -23,9 +23,9 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.units.measure.AngularVelocity;
+import frc.robot.Constants;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import frc.robot.Constants;
 
 /**
  * ShooterIOTalonFX implements the ShooterIO interface using four CTRE TalonFX motor controllers in
@@ -204,13 +204,6 @@ public class ShooterIOTalonFX implements ShooterIO {
 
   @Override
   public void applyOutputs(ShooterIOOutputs outputs) {
-    if (Constants.tuningMode) {
-      var neutralMode = outputs.brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-      leaderMotor.setNeutralMode(neutralMode);
-      followerMotor1.setNeutralMode(neutralMode);
-      followerMotor2.setNeutralMode(neutralMode);
-      followerMotor3.setNeutralMode(neutralMode);
-    }
     switch (outputs.mode) {
       case BRAKE -> leaderMotor.setControl(voltageRequest.withOutput(0.0));
       case VOLTAGE -> leaderMotor.setControl(voltageRequest.withOutput(outputs.volts));
