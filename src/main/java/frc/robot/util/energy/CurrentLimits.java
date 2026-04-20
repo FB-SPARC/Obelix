@@ -28,7 +28,7 @@ public final class CurrentLimits {
   public static final double kIntake = 100.0;
 
   /** Stator current limit for the Rack motor. */
-  public static final double kRack = 100.0;
+  public static final double kRack = 35.0;
 
   /** Stator current limit for each Shooter motor (leader + 3 followers). */
   public static final double kShooter = 100.0;
