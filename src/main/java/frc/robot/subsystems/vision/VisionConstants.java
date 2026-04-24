@@ -17,15 +17,15 @@ public class VisionConstants {
       AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
 
   // Camera names, must match names configured on coprocessor
-  public static String camera0Name = "camera_0";
-  public static String camera1Name = "camera_1";
+  public static String camera0Name = "pv_LEFT"; // left
+  public static String camera1Name = "pv_RIGHT"; // right
 
   // Robot to camera transforms
   // (Not used by Limelight, configure in web UI instead)
   public static Transform3d robotToCamera0 =
-      new Transform3d(0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, 0.0));
+      new Transform3d(0.31435, -0.24779, 0.27251, new Rotation3d(0.0, Math.PI / 12, Math.PI / 2));
   public static Transform3d robotToCamera1 =
-      new Transform3d(-0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, Math.PI));
+      new Transform3d(0.31435, 0.24779, 0.27251, new Rotation3d(0.0, Math.PI / 12, -Math.PI / 2));
 
   // Basic filtering thresholds
   public static double maxAmbiguity = 0.3;
@@ -75,7 +75,7 @@ public class VisionConstants {
       new NorthstarCameraConfig[] {
         // Camera 0 – iPhone via Continuity Camera (testing)
         new NorthstarCameraConfig(
-            "1", // iPhone camera index
+            "4", // iPhone camera index
             1280,
             720,
             3, // auto exposure ON (CAP_PROP_AUTO_EXPOSURE=3 on macOS)
@@ -85,7 +85,7 @@ public class VisionConstants {
             1.0,
             new Transform3d(0.0, 0.0, 0.0, new Rotation3d())),
         new NorthstarCameraConfig(
-            "0", // iPhone camera index
+            "5", // iPhone camera index
             1280,
             720,
             3, // auto exposure ON (CAP_PROP_AUTO_EXPOSURE=3 on macOS)

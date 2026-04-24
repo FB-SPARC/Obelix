@@ -10,8 +10,10 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
+import frc.robot.RobotState;
 import frc.robot.subsystems.bed.Bed;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.feeder.Feeder;
@@ -50,7 +52,7 @@ public class Superstructure extends SubsystemBase {
   private final Drive drive;
 
   private static final LoggedTunableNumber shooterRpmScale =
-      new LoggedTunableNumber("Superstructure/ShooterRPMScale", 1.95);
+      new LoggedTunableNumber("Superstructure/ShooterRPMScale", 1.9);
 
   // ── State machine ──────────────────────────────────────────────────────────
   public enum State {
@@ -62,7 +64,8 @@ public class Superstructure extends SubsystemBase {
     INTAKE_CLOSED,
     /** Shooting — hood/shooter from shot-solution, auto-aim via drive command. */
     SHOOTING,
-    COAST
+    COAST,
+    REVERSE_INTAKE_FEED
   }
 
   private State currentState = State.IDLE;
@@ -146,6 +149,17 @@ public class Superstructure extends SubsystemBase {
     feeder.stop();
     hood.setAngle(0);
     shooter.stop();
+  }
+
+  private void handleReverseIntakeFeed() {
+    rack.setPosition(
+        RackConstants.MAX_POSITION_METERS,
+        RackConstants.kCruiseVelocity * 10,
+        RackConstants.kAcceleration * 30,
+        RackConstants.kJerk * 30);
+    intake.setVoltage(-8);
+    bed.setBedRPM(-2500);
+    feeder.setFeederRPM(-2000);
   }
 
   /**
@@ -241,7 +255,8 @@ public class Superstructure extends SubsystemBase {
   private static final Translation2d GOAL_1 = new Translation2d(2.0, 2.0);
   private static final Translation2d GOAL_2 = new Translation2d(2.0, 6.043);
 
-  public Translation2d getTarget() {
+  /** Returns the raw (non-compensated) target point on the field. */
+  private Translation2d getRawTarget() {
     Translation2d robotPos = drive.getPose().getTranslation();
 
     double flippedRobotX = AllianceFlipUtil.apply(drive.getPose()).getX();
@@ -254,6 +269,44 @@ public class Superstructure extends SubsystemBase {
     }
 
     return AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint.toTranslation2d());
+  }
+
+  /**
+   * Returns the velocity-compensated virtual target for shoot-on-the-move. Offsets the raw target
+   * opposite to the robot's tangential velocity (relative to the goal) scaled by time of flight, so
+   * the ball's inherited sideways drift lands it on the actual target.
+   */
+  public Translation2d getTarget() {
+    Translation2d rawTarget = getRawTarget();
+    Translation2d robotPos = drive.getPose().getTranslation();
+    Translation2d toTarget = rawTarget.minus(robotPos);
+    double distance = toTarget.getNorm();
+
+    if (distance < 1e-3) return rawTarget;
+
+    // Time of flight (polynomial uses negative distance convention)
+    double tFlight = sc.getTime(-distance);
+
+    // Field-relative robot velocity
+    ChassisSpeeds fieldVel = RobotState.getInstance().getFieldVelocity();
+    Translation2d velVec =
+        new Translation2d(fieldVel.vxMetersPerSecond, fieldVel.vyMetersPerSecond);
+
+    // Tangential component = velocity minus its projection onto the robot-to-target axis
+    Translation2d radialUnit = toTarget.div(distance);
+    double radialProjection = velVec.getX() * radialUnit.getX() + velVec.getY() * radialUnit.getY();
+    Translation2d tangentialVel = velVec.minus(radialUnit.times(radialProjection));
+
+    // Shift aim point opposite to tangential drift: ball inherits v_tangential,
+    // so aim at (target - v_tangential * t) to compensate
+    Translation2d virtualTarget =
+        rawTarget.minus(
+            new Translation2d(tangentialVel.getX() * tFlight, tangentialVel.getY() * tFlight));
+
+    Logger.recordOutput("Superstructure/ShotControl/TangentialVel", tangentialVel.getNorm());
+    Logger.recordOutput("Superstructure/ShotControl/TimeOfFlight", tFlight);
+
+    return virtualTarget;
   }
 
   /** Returns the distance from the robot to the target in meters. */
@@ -295,6 +348,7 @@ public class Superstructure extends SubsystemBase {
       case SHOOTING -> handleShooting();
       case COAST -> handleCoast();
       case INTAKE_CLOSED -> handleIntakeClosed();
+      case REVERSE_INTAKE_FEED -> handleReverseIntakeFeed();
     }
 
     LoggedTracer.record("Superstructure");

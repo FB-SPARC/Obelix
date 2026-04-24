@@ -1,0 +1,31 @@
+public double getHoodAngle(double d) {
+    double angle =
+        -0.0014253659517069624 * d * d * d * d
+            - 0.053894774254857114 * d * d * d
+            - 0.6755313414015157 * d * d
+            - 1.3631485365781748 * d
+            + 74.7578402097823;
+    return 90 - angle + hoodAngleOffsetDeg;
+  }
+
+  public double getTime(double d) {
+    return -0.00019879696418762286 * d * d * d * d
+        - 0.008013262172280084 * d * d * d
+        - 0.11631177902915836 * d * d
+        - 0.7768493700779248 * d
+        + 0.1883993348773433;
+  }
+
+  /**
+   * Returns the commanded flywheel RPM for the given distance.
+   *
+   * @param d distance to target in meters
+   * @return flywheel RPM
+   */
+  public double getFlywheelRPM(double d) {
+    return -0.12032444435636891 * d * d * d * d
+        - 4.864540617466876 * d * d * d
+        - 70.6640039265143 * d * d
+        - 493.62104238153813 * d
+        + 272.19259882309564;
+  }

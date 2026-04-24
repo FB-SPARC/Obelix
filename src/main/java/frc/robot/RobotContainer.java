@@ -62,9 +62,11 @@ import frc.robot.subsystems.shooter.ShooterIOTalonFX;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.superstructure.Superstructure.State;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.subsystems.vision.VisionIONorthstar;
+import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -127,7 +129,10 @@ public class RobotContainer {
         vision =
             new Vision(
                 new VisionIOLimelight("limelight-left", RobotState.getInstance()::getRotation),
-                new VisionIOLimelight("limelight-right", RobotState.getInstance()::getRotation));
+                new VisionIOPhotonVision(
+                    VisionConstants.camera0Name, VisionConstants.robotToCamera0),
+                new VisionIOPhotonVision(
+                    VisionConstants.camera1Name, VisionConstants.robotToCamera1));
         break;
 
       case SIM:
@@ -287,6 +292,20 @@ public class RobotContainer {
                             Math.hypot(controller.getLeftX(), controller.getLeftY()), DEADBAND)
                         > 0.0));
 
+    controller
+        .R2()
+        .onTrue(
+            Commands.runOnce(
+                () -> superstructure.setState(State.REVERSE_INTAKE_FEED), superstructure));
+    controller
+        .R2()
+        .onFalse(
+            Commands.runOnce(
+                () -> {
+                  if (superstructure.getState() == State.REVERSE_INTAKE_FEED)
+                    superstructure.setState(State.ACTIVE);
+                },
+                superstructure));
     // Right stick: Cancel shot (e.g., adjust after release, recoil compensation, or abort)
     // Any right stick input while shooting → ACTIVE (maintains deployed state, stops shooting)
     new Trigger(

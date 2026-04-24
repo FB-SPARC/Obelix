@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
@@ -279,13 +280,25 @@ public class DriveCommands {
               }
 
               // Desired heading: angle from robot → target
-              Translation2d robotToTarget =
-                  targetSupplier.get().minus(drive.getPose().getTranslation());
+              Translation2d target = targetSupplier.get();
+              Translation2d robotToTarget = target.minus(drive.getPose().getTranslation());
               Rotation2d targetAngle = robotToTarget.getAngle();
 
               double omega =
                   angleController.calculate(
                       drive.getRotation().getRadians(), targetAngle.getRadians());
+
+              // Log aim-at-point telemetry
+              double headingErrorDeg =
+                  Units.radiansToDegrees(targetAngle.minus(drive.getRotation()).getRadians());
+              Logger.recordOutput(
+                  "DriveCommands/AimAtPoint/TargetPoint", new Pose2d(target, new Rotation2d()));
+              Logger.recordOutput(
+                  "DriveCommands/AimAtPoint/TargetAngleDeg", targetAngle.getDegrees());
+              Logger.recordOutput("DriveCommands/AimAtPoint/HeadingErrorDeg", headingErrorDeg);
+              Logger.recordOutput("DriveCommands/AimAtPoint/OmegaRadPerSec", omega);
+              Logger.recordOutput(
+                  "DriveCommands/AimAtPoint/DistanceToTarget", robotToTarget.getNorm());
 
               if (driverIsTranslating.getAsBoolean()) {
                 // Driver is translating → drive + auto-aim (shoot on the move)
@@ -309,7 +322,7 @@ public class DriveCommands {
                             : drive.getRotation()));
               } else {
                 // Driver is NOT translating → aim in place, then X-lock when on target
-                if (Math.abs(omega) > 0.05) {
+                if (Math.abs(omega) > Units.degreesToRadians(5)) {
                   drive.runVelocity(new ChassisSpeeds(0.0, 0.0, omega));
                 } else {
                   drive.stopWithX();

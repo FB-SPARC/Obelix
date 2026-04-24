@@ -16,7 +16,7 @@ import edu.wpi.first.wpilibj.RobotBase;
  */
 public final class Constants {
   public static final Mode simMode = Mode.SIM;
-  public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
+  public static final Mode currentMode = Mode.REAL;
 
   /** Main robot loop period in seconds. */
   public static final double loopPeriodSecs = 0.02;
@@ -87,7 +87,7 @@ public final class Constants {
   }
 
   public static final class DriveAlignConstants {
-    public static final double ANGLE_KP = 5.0;
+    public static final double ANGLE_KP = 3.0;
     public static final double ANGLE_KD = 0.0;
     public static final double ANGLE_MAX_VELOCITY = 8.0;
     public static final double ANGLE_MAX_ACCELERATION = 20.0;

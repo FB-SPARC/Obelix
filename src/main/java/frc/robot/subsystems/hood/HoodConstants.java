@@ -22,7 +22,7 @@ public final class HoodConstants {
   public static final double MIN_ANGLE_DEGREES = 0;
 
   public static final double kEncoderOffset =
-      75.674;//44.297; // 41.045; // 79.014; // CANCoder magnet offset in degrees
+      39.023; // 75.674; // 44.297; // 41.045; // 79.014; // CANCoder magnet offset in degrees
 
   public static final double kTolerance = 0.5; // Degrees
 
