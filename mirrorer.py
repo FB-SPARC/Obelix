@@ -104,11 +104,11 @@ def mirror_choreo_traj(data):
 def main():
     if len(sys.argv) < 2:
         # Default: mirror all udl*.traj -> udr*.traj
-        inputs = sorted(CHOREO_DIR.glob("rtml*.traj"))
+        inputs = sorted(CHOREO_DIR.glob("udl*.traj"))
         if not inputs:
             print("No udl*.traj files found in", CHOREO_DIR)
             return
-        pairs = [(p, p.parent / p.name.replace("rtml", "rtmr")) for p in inputs]
+        pairs = [(p, p.parent / p.name.replace("uld", "ulr")) for p in inputs]
     else:
         input_path = Path(sys.argv[1])
         if len(sys.argv) >= 3:

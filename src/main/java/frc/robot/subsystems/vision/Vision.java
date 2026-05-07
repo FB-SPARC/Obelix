@@ -11,6 +11,7 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import frc.robot.RobotState;
@@ -23,11 +24,13 @@ import org.littletonrobotics.junction.Logger;
 
 public class Vision extends VirtualSubsystem {
   private final VisionIO[] io;
+  private final Transform3d[] robotToCameras;
   private final VisionIOInputsAutoLogged[] inputs;
   private final Alert[] disconnectedAlerts;
 
-  public Vision(VisionIO... io) {
+  public Vision(VisionIO[] io, Transform3d[] robotToCameras) {
     this.io = io;
+    this.robotToCameras = robotToCameras;
 
     // Initialize inputs
     this.inputs = new VisionIOInputsAutoLogged[io.length];
@@ -180,6 +183,14 @@ public class Vision extends VirtualSubsystem {
         "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
     Logger.recordOutput(
         "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
+
+    // Log camera poses on the field
+    Pose3d robotPose3d = new Pose3d(RobotState.getInstance().getEstimatedPose());
+    Pose3d[] cameraPoses = new Pose3d[robotToCameras.length];
+    for (int i = 0; i < robotToCameras.length; i++) {
+      cameraPoses[i] = robotPose3d.plus(robotToCameras[i]);
+    }
+    Logger.recordOutput("Vision/CameraPoses", cameraPoses);
 
     LoggedTracer.record("Vision");
   }

@@ -13,6 +13,7 @@ import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -37,6 +38,7 @@ public class IntakeIOTalonFX implements IntakeIO {
 
   // Control requests
   private final VoltageOut voltageRequest = new VoltageOut(0);
+  private final VelocityVoltage velocityRequest = new VelocityVoltage(0).withSlot(0);
 
   // Leader status signals
   private final StatusSignal<AngularVelocity> leaderVelocity;
@@ -64,6 +66,12 @@ public class IntakeIOTalonFX implements IntakeIO {
     config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
     config.CurrentLimits.StatorCurrentLimit = IntakeConstants.MAX_CURRENT;
     config.CurrentLimits.StatorCurrentLimitEnable = true;
+    config.Slot0.kP = IntakeConstants.kP;
+    config.Slot0.kI = IntakeConstants.kI;
+    config.Slot0.kD = IntakeConstants.kD;
+    config.Slot0.kS = IntakeConstants.kS;
+    config.Slot0.kV = IntakeConstants.kV;
+    config.Slot0.kA = IntakeConstants.kA;
 
     // Apply configuration to leader
     tryUntilOk(5, () -> leaderMotor.getConfigurator().apply(config, 0.25));
@@ -133,6 +141,8 @@ public class IntakeIOTalonFX implements IntakeIO {
     switch (outputs.mode) {
       case BRAKE -> leaderMotor.setControl(voltageRequest.withOutput(0.0));
       case VOLTAGE -> leaderMotor.setControl(voltageRequest.withOutput(outputs.volts));
+      case VELOCITY -> leaderMotor.setControl(
+          velocityRequest.withVelocity(outputs.velocityRPM / 60.0));
     }
   }
 

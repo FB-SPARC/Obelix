@@ -83,6 +83,7 @@ public class Intake extends FullSubsystem {
   @Override
   public void periodicAfterScheduler() {
     Logger.recordOutput("Intake/OutputMode", outputs.mode.toString());
+    Logger.recordOutput("Intake/VelocitySetpointRPM", outputs.velocityRPM);
     io.applyOutputs(outputs);
   }
 
@@ -96,6 +97,18 @@ public class Intake extends FullSubsystem {
   public void setVoltage(double voltage) {
     outputs.mode = IntakeOutputMode.VOLTAGE;
     outputs.volts = voltage;
+  }
+
+  // --- Velocity (RPM) API ---
+
+  /**
+   * Sets the intake motor to a closed-loop velocity setpoint.
+   *
+   * @param rpm target RPM (positive = intake, negative = eject).
+   */
+  public void setRPM(double rpm) {
+    outputs.mode = IntakeOutputMode.VELOCITY;
+    outputs.velocityRPM = rpm;
   }
 
   /**

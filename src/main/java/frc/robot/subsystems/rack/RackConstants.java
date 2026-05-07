@@ -16,7 +16,7 @@ public final class RackConstants {
 
   public static final double MAX_CURRENT = CurrentLimits.kRack;
 
-  public static final double MAX_POSITION_METERS = 0.285;
+  public static final double MAX_POSITION_METERS = 0.295;
   public static final double MIN_POSITION_METERS = 0.0;
 
   public static final double kTolerance = 0.05; // Meters

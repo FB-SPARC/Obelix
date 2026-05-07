@@ -26,12 +26,14 @@ public interface IntakeIO {
 
   public static enum IntakeOutputMode {
     VOLTAGE,
+    VELOCITY,
     BRAKE
   }
 
   public static class IntakeIOOutputs {
     public IntakeOutputMode mode = IntakeOutputMode.BRAKE;
     public double volts = 0.0;
+    public double velocityRPM = 0.0;
     public boolean brakeMode = false;
   }
 

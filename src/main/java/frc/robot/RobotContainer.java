@@ -11,6 +11,7 @@ import choreo.trajectory.SwerveSample;
 import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -103,9 +104,15 @@ public class RobotContainer {
       new Alert("Driver controller disconnected (port 0).", AlertType.kError);
 
   // Dashboard inputs
+  private final LoggedDashboardChooser<String> sideChooser;
+  private final LoggedDashboardChooser<String> strategyChooser;
+  private final LoggedDashboardChooser<String> bumpTrenchChooser;
   private final LoggedDashboardChooser<Command> autoChooser;
   private final Map<Command, List<Trajectory<SwerveSample>>> autoTrajectories = new HashMap<>();
+
   private Command lastDisplayedAuto = null;
+  private String lastAutoKey = "";
+  private final Command defaultTuneAuto = Commands.none();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -128,11 +135,18 @@ public class RobotContainer {
         shooter = new Shooter(new ShooterIOTalonFX());
         vision =
             new Vision(
-                new VisionIOLimelight("limelight-left", RobotState.getInstance()::getRotation),
-                new VisionIOPhotonVision(
-                    VisionConstants.camera0Name, VisionConstants.robotToCamera0),
-                new VisionIOPhotonVision(
-                    VisionConstants.camera1Name, VisionConstants.robotToCamera1));
+                new VisionIO[] {
+                  new VisionIOLimelight("limelight-left", RobotState.getInstance()::getRotation),
+                  new VisionIOPhotonVision(
+                      VisionConstants.camera0Name, VisionConstants.robotToCamera0),
+                  new VisionIOPhotonVision(
+                      VisionConstants.camera1Name, VisionConstants.robotToCamera1)
+                },
+                new Transform3d[] {
+                  new Transform3d(), // Limelight — transform configured in web UI
+                  VisionConstants.robotToCamera0,
+                  VisionConstants.robotToCamera1
+                });
         break;
 
       case SIM:
@@ -154,10 +168,16 @@ public class RobotContainer {
 
         vision =
             new Vision(
-                new VisionIONorthstar(
-                    0, () -> AprilTagLayoutType.OFFICIAL, RobotState.getInstance()::getRotation),
-                new VisionIONorthstar(
-                    1, () -> AprilTagLayoutType.OFFICIAL, RobotState.getInstance()::getRotation));
+                new VisionIO[] {
+                  new VisionIONorthstar(
+                      0, () -> AprilTagLayoutType.OFFICIAL, RobotState.getInstance()::getRotation),
+                  new VisionIONorthstar(
+                      1, () -> AprilTagLayoutType.OFFICIAL, RobotState.getInstance()::getRotation)
+                },
+                new Transform3d[] {
+                  VisionConstants.northstarCameras[0].robotToCamera(),
+                  VisionConstants.northstarCameras[1].robotToCamera()
+                });
         break;
 
       default:
@@ -176,20 +196,31 @@ public class RobotContainer {
         intake = new Intake(new IntakeIO() {});
         rack = new Rack(new RackIO() {});
         shooter = new Shooter(new ShooterIO() {});
-        vision = new Vision(new VisionIO() {});
+        vision =
+            new Vision(new VisionIO[] {new VisionIO() {}}, new Transform3d[] {new Transform3d()});
         break;
     }
 
     // Create superstructure (coordinates all non-drive subsystems + drive)
     superstructure = new Superstructure(bed, feeder, hood, intake, rack, shooter, drive);
 
-    // Set up auto routines
+    // Set up auto selectors
+    sideChooser = new LoggedDashboardChooser<>("Auto/Side");
+    sideChooser.addDefaultOption("Left", "left");
+    sideChooser.addOption("Right", "right");
+
+    strategyChooser = new LoggedDashboardChooser<>("Auto/Strategy");
+    strategyChooser.addDefaultOption("UDL/UDR", "ud");
+    strategyChooser.addOption("Depot", "depot");
+    strategyChooser.addOption("Basic", "basic");
+
+    bumpTrenchChooser = new LoggedDashboardChooser<>("Auto/BumpTrench");
+    bumpTrenchChooser.addDefaultOption("No Bump", "no_bump");
+    bumpTrenchChooser.addOption("Bump", "bump");
+
+    // Auto command is built dynamically from selectors
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");
-    autoChooser.addDefaultOption("None", Commands.none());
-    autoChooser.addOption("Left Double Swing", leftDoubleSwingAuto());
-    autoChooser.addOption("Right Double Swing", rightDoubleSwingAuto());
-    autoChooser.addOption("Mid", midAuto());
-    autoChooser.addOption("Mid Depot", midDepotAuto());
+    autoChooser.addDefaultOption("None", defaultTuneAuto);
 
     // Set up SysId routines
     autoChooser.addOption(
@@ -206,9 +237,13 @@ public class RobotContainer {
         "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
     autoChooser.addOption(
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
-
+    autoChooser.addOption(
+        "TuneForward", followTrajectory("TunePathForward.traj", true, new ArrayList<>()));
+    autoChooser.addOption(
+        "TuneRotate", followTrajectory("TunePathRotate.traj", true, new ArrayList<>()));
     // Configure the button bindings
     configureButtonBindings();
+    // configureDrainBindings();
   }
 
   /**
@@ -325,6 +360,17 @@ public class RobotContainer {
         .onTrue(Commands.runOnce(() -> superstructure.setState(State.IDLE), superstructure));
   }
 
+  private void configureDrainBindings() {
+    controller
+        .touchpad()
+        .onTrue(Commands.runOnce(() -> superstructure.setState(State.IDLE), superstructure));
+
+    controller
+        .cross()
+        .onTrue(
+            Commands.runOnce(() -> superstructure.setState(State.BATTERY_DRAIN), superstructure));
+  }
+
   //   public void teleopInit() {
   //     if (superstructure != null) superstructure.setState(State.ACTIVE);
   //   }
@@ -335,7 +381,17 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return autoChooser.get();
+    // If a SysId routine is selected, use it directly
+    Command sysIdCommand = autoChooser.get();
+    if (!(sysIdCommand.equals(defaultTuneAuto))) {
+      return sysIdCommand;
+    }
+
+    // Build auto from selectors
+    String side = sideChooser.get();
+    String strategy = strategyChooser.get();
+    String bumpTrench = bumpTrenchChooser.get();
+    return buildAutoCommand(side, strategy, bumpTrench);
   }
 
   /** Called periodically from {@link Robot#robotPeriodic()}. */
@@ -344,21 +400,36 @@ public class RobotContainer {
     controllerDisconnectedAlert.set(
         !DriverStation.isJoystickConnected(controller.getHID().getPort()));
 
-    // Display the selected auto's trajectory on the Field2d widget
-    Command selectedAuto = autoChooser.get();
-    if (selectedAuto != lastDisplayedAuto) {
-      lastDisplayedAuto = selectedAuto;
-      List<Trajectory<SwerveSample>> trajs = autoTrajectories.getOrDefault(selectedAuto, List.of());
-      List<Pose2d> allPoses = new ArrayList<>();
-      boolean mirror = shouldMirror();
-      for (var traj : trajs) {
-        for (var sample : traj.samples()) {
-          allPoses.add(mirror ? sample.flipped().getPose() : sample.getPose());
+    // Log selector state
+    String strategy = strategyChooser.get();
+    boolean bumpDisabled = "depot".equals(strategy) || "basic".equals(strategy);
+    Logger.recordOutput("Auto/BumpDisabled", bumpDisabled);
+    Logger.recordOutput("Auto/SelectedSide", sideChooser.get());
+    Logger.recordOutput("Auto/SelectedStrategy", strategy);
+    Logger.recordOutput(
+        "Auto/SelectedBumpTrench", bumpDisabled ? "disabled" : bumpTrenchChooser.get());
+
+    if (edu.wpi.first.wpilibj.RobotState.isDisabled()) {
+      String side = sideChooser.get();
+      String strategyA = strategyChooser.get();
+      String bumpTrench = bumpTrenchChooser.get();
+      String autoKey = side + "/" + strategyA + "/" + bumpTrench;
+      if (!autoKey.equals(lastAutoKey)) {
+        lastAutoKey = autoKey;
+        lastDisplayedAuto = buildAutoCommand(side, strategyA, bumpTrench);
+        List<Trajectory<SwerveSample>> trajs =
+            autoTrajectories.getOrDefault(lastDisplayedAuto, List.of());
+        List<Pose2d> allPoses = new ArrayList<>();
+        boolean mirror = shouldMirror();
+        for (var traj : trajs) {
+          for (var sample : traj.samples()) {
+            allPoses.add(mirror ? sample.flipped().getPose() : sample.getPose());
+          }
         }
+        Pose2d[] posesArray = allPoses.toArray(Pose2d[]::new);
+        drive.setAutoTrajectory(posesArray);
+        Logger.recordOutput("Odometry/AutoTrajectory", posesArray);
       }
-      Pose2d[] posesArray = allPoses.toArray(Pose2d[]::new);
-      drive.setAutoTrajectory(posesArray);
-      Logger.recordOutput("Odometry/AutoTrajectory", posesArray);
     }
   }
 
@@ -400,53 +471,59 @@ public class RobotContainer {
     return auto;
   }
 
-  // ── Auto routines ─────────────────────────────────────────────────────────
+  // ── Auto builder ──────────────────────────────────────────────────────────
 
-  private Command leftDoubleSwingAuto() {
+  private Command buildAutoCommand(String side, String strategy, String bumpTrench) {
+    boolean isLeft = "left".equals(side);
+    boolean isBump = "bump".equals(bumpTrench);
     List<Trajectory<SwerveSample>> trajs = new ArrayList<>();
-    return registerAutoTrajectories(
-        Commands.sequence(
-            AutoCommands.intakeMode(superstructure, rack),
-            followTrajectory("udl1", true, trajs),
-            followTrajectory("udl2", false, trajs),
-            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget),
-            AutoCommands.intakeMode(superstructure, rack),
-            followTrajectory("udl3", false, trajs),
-            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget)),
-        trajs);
-  }
 
-  private Command rightDoubleSwingAuto() {
-    List<Trajectory<SwerveSample>> trajs = new ArrayList<>();
-    return registerAutoTrajectories(
-        Commands.sequence(
-            AutoCommands.intakeMode(superstructure, rack),
-            followTrajectory("d1", true, trajs),
-            followTrajectory("d2", false, trajs),
-            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget),
-            AutoCommands.intakeMode(superstructure, rack),
-            followTrajectory("d3", false, trajs),
-            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget)),
-        trajs);
-  }
+    switch (strategy) {
+      case "ud":
+        {
+          // UDL/UDR: 3-segment double swing auto
+          String prefix = isLeft ? "udl" : "udr";
+          String seg3 = isBump ? prefix + "3_bump" : prefix + "3";
+          return registerAutoTrajectories(
+              Commands.sequence(
+                  AutoCommands.intakeMode(superstructure, rack),
+                  followTrajectory(prefix + "1", true, trajs),
+                  followTrajectory(prefix + "2", false, trajs),
+                  AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget),
+                  AutoCommands.intakeMode(superstructure, rack),
+                  followTrajectory(seg3, false, trajs),
+                  AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget)),
+              trajs);
+        }
 
-  private Command midAuto() {
-    List<Trajectory<SwerveSample>> trajs = new ArrayList<>();
-    return registerAutoTrajectories(
-        Commands.sequence(
-            followTrajectory("M1", true, trajs),
-            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget)),
-        trajs);
-  }
+      case "depot":
+        {
+          // Depot: depot1 -> return-to-mid (rtml/rtmr based on side, always bump)
+          String rtm = isLeft ? "rtml_bump" : "rtmr_bump";
+          return registerAutoTrajectories(
+              Commands.sequence(
+                  AutoCommands.intakeMode(superstructure, rack),
+                  followTrajectory("depot1", true, trajs),
+                  AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget),
+                  followTrajectory(rtm, false, trajs)),
+              trajs);
+        }
 
-  private Command midDepotAuto() {
-    List<Trajectory<SwerveSample>> trajs = new ArrayList<>();
-    return registerAutoTrajectories(
-        Commands.sequence(
-            AutoCommands.intakeMode(superstructure, rack),
-            followTrajectory("MD1", true, trajs),
-            followTrajectory("MD2", false, trajs),
-            AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget)),
-        trajs);
+      case "basic":
+        {
+          // Basic: cb1 -> return-to-mid (rtml/rtmr based on side, always bump)
+          String rtm = isLeft ? "rtml_bump" : "rtmr_bump";
+          return registerAutoTrajectories(
+              Commands.sequence(
+                  AutoCommands.intakeMode(superstructure, rack),
+                  followTrajectory("cb1", true, trajs),
+                  AutoCommands.shootSequence(superstructure, drive, superstructure::getTarget),
+                  followTrajectory(rtm, false, trajs)),
+              trajs);
+        }
+
+      default:
+        return Commands.none();
+    }
   }
 }

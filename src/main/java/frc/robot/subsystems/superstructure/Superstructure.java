@@ -65,7 +65,8 @@ public class Superstructure extends SubsystemBase {
     /** Shooting — hood/shooter from shot-solution, auto-aim via drive command. */
     SHOOTING,
     COAST,
-    REVERSE_INTAKE_FEED
+    REVERSE_INTAKE_FEED,
+    BATTERY_DRAIN
   }
 
   private State currentState = State.IDLE;
@@ -157,7 +158,7 @@ public class Superstructure extends SubsystemBase {
         RackConstants.kCruiseVelocity * 10,
         RackConstants.kAcceleration * 30,
         RackConstants.kJerk * 30);
-    intake.setVoltage(-8);
+    intake.setRPM(-4000);
     bed.setBedRPM(-2500);
     feeder.setFeederRPM(-2000);
   }
@@ -168,7 +169,11 @@ public class Superstructure extends SubsystemBase {
    * stall time. Other systems idle.
    */
   private void handleIntaking() {
-    intake.setVoltage(9); // Full power intake
+    if (rack.getPosition() > 0.1) {
+      intake.setRPM(4000); // Closed-loop intake
+    } else if (rack.getPosition() < 0.05) {
+      intake.setRPM(-2000);
+    }
     rack.setPosition(
         RackConstants.MAX_POSITION_METERS,
         RackConstants.kCruiseVelocity * 10, // Aggressive deploy speed
@@ -178,6 +183,18 @@ public class Superstructure extends SubsystemBase {
     feeder.stop();
     hood.setAngle(0);
     shooter.stop();
+  }
+
+  private void handleBatteryDrain() {
+    intake.setRPM(2000);
+    rack.setPosition(
+        RackConstants.MAX_POSITION_METERS,
+        RackConstants.kCruiseVelocity * 10, // Aggressive deploy speed
+        RackConstants.kAcceleration * 30,
+        RackConstants.kJerk * 30);
+    bed.setBedRPM(2000);
+    feeder.setFeederRPM(2000);
+    shooter.setShooterRPM(2000);
   }
 
   /**
@@ -215,12 +232,16 @@ public class Superstructure extends SubsystemBase {
       bed.setBedRPM(2000);
       feeder.setFeederRPM(2500);
       // Compact rack and hold intake during shot
-      rack.setPosition(
-          RackConstants.MIN_POSITION_METERS,
-          RackConstants.kCruiseVelocity,
-          RackConstants.kAcceleration,
-          RackConstants.kJerk);
-      intake.setVoltage(4); // Hold voltage
+      // rack.setPosition(
+      //     RackConstants.MIN_POSITION_METERS,
+      //     RackConstants.kCruiseVelocity,
+      //     RackConstants.kAcceleration,
+      //     RackConstants.kJerk);
+      if (rack.getPosition() > 0.1) {
+        intake.setVoltage(4); // Hold voltage
+      } else {
+        intake.stop();
+      }
     } else {
       bed.stop(); // Don't feed until shooter is ready
       feeder.stop();
@@ -349,6 +370,7 @@ public class Superstructure extends SubsystemBase {
       case COAST -> handleCoast();
       case INTAKE_CLOSED -> handleIntakeClosed();
       case REVERSE_INTAKE_FEED -> handleReverseIntakeFeed();
+      case BATTERY_DRAIN -> handleBatteryDrain();
     }
 
     LoggedTracer.record("Superstructure");

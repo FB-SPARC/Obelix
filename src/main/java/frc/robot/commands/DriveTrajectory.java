@@ -23,13 +23,13 @@ import org.littletonrobotics.junction.Logger;
 /** Follows a Choreo trajectory using feedforward + PID control. */
 public class DriveTrajectory extends Command {
   private static final LoggedTunableNumber linearkP =
-      new LoggedTunableNumber("DriveTrajectory/LinearkP", 8.0);
+      new LoggedTunableNumber("DriveTrajectory/LinearkP", 2.7);
   private static final LoggedTunableNumber linearkD =
-      new LoggedTunableNumber("DriveTrajectory/LinearkD", 0.0);
+      new LoggedTunableNumber("DriveTrajectory/LinearkD", 0.1);
   private static final LoggedTunableNumber thetakP =
-      new LoggedTunableNumber("DriveTrajectory/ThetakP", 4.0);
+      new LoggedTunableNumber("DriveTrajectory/ThetakP", 3);
   private static final LoggedTunableNumber thetakD =
-      new LoggedTunableNumber("DriveTrajectory/ThetakD", 0.0);
+      new LoggedTunableNumber("DriveTrajectory/ThetakD", 0.1);
 
   private final Timer timer = new Timer();
   private final Trajectory<SwerveSample> trajectory;

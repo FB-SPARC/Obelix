@@ -49,6 +49,13 @@ public class IntakeIOSim implements IntakeIO {
     switch (outputs.mode) {
       case BRAKE -> appliedVoltage = 0.0;
       case VOLTAGE -> appliedVoltage = outputs.volts;
+      case VELOCITY -> {
+        // Simple P controller for sim velocity control
+        double currentRPM =
+            Units.radiansPerSecondToRotationsPerMinute(sim.getAngularVelocityRadPerSec());
+        double error = outputs.velocityRPM - currentRPM;
+        appliedVoltage = error * 0.01;
+      }
     }
     appliedVoltage = Math.max(-12.0, Math.min(12.0, appliedVoltage));
     sim.setInputVoltage(appliedVoltage);
